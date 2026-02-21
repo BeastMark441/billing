@@ -22,6 +22,7 @@ class OrderController extends Controller
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
+            'use_trial' => 'sometimes|boolean',
         ]);
 
         $product = Product::findOrFail($request->product_id);
@@ -32,8 +33,55 @@ class OrderController extends Controller
             return response()->json(['error' => 'Product is not available'], 404);
         }
 
-        // Simple balance check
+        // Trial flow
+        if ($request->boolean('use_trial')) {
+            $trial = $product->trials()->where('active', true)->first();
+            if (!$trial) {
+                return response()->json(['error' => 'Trial is not available for this product'], 422);
+            }
+            $usedCount = Order::where('user_id', $user->id)
+                ->where('product_id', $product->id)
+                ->where('status', 'trial')
+                ->count();
+            if ($usedCount >= $trial->max_per_user) {
+                return response()->json(['error' => 'Trial limit reached for this product'], 409);
+            }
+            try {
+                return DB::transaction(function () use ($user, $product, $trial) {
+                    $order = Order::create([
+                        'user_id' => $user->id,
+                        'product_id' => $product->id,
+                        'amount' => 0,
+                        'status' => 'trial',
+                    ]);
+                    // Provision server with trial expiration
+                    $server = $this->provisioningService->provision($order);
+                    $server->expires_at = now()->addDays($trial->duration_days);
+                    $server->save();
+                    \Log::info('Trial order created', [
+                        'order_id' => $order->id,
+                        'user_id' => $user->id,
+                        'product_id' => $product->id,
+                        'duration_days' => $trial->duration_days,
+                    ]);
+                    return response()->json([
+                        'message' => 'Trial activated and server provisioned',
+                        'order' => $order,
+                        'server' => $server,
+                    ], 201);
+                });
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Order processing failed: ' . $e->getMessage()], 500);
+            }
+        }
+
+        // Simple balance check for paid flow
         if ($user->balance < $product->price_monthly) {
+            \Log::warning('Insufficient balance for order', [
+                'user_id' => $user->id,
+                'balance' => $user->balance,
+                'price' => $product->price_monthly,
+            ]);
             return response()->json(['error' => 'Insufficient balance'], 402);
         }
 
@@ -48,7 +96,15 @@ class OrderController extends Controller
                 ]);
 
                 // Deduct Balance
+                $oldBalance = $user->balance;
                 $user->decrement('balance', $product->price_monthly);
+                \Log::info('Balance deducted for order', [
+                    'user_id' => $user->id,
+                    'order_id' => $order->id,
+                    'old_balance' => $oldBalance,
+                    'amount' => $product->price_monthly,
+                    'new_balance' => $user->balance - 0, // value after decrement in memory may be stale; for logs we compute anyway
+                ]);
 
                 // Record Payment
                 $order->payments()->create([

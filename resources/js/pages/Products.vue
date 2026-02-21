@@ -24,9 +24,14 @@
                         <div class="text-xs text-gray-400 uppercase tracking-wider">{{ product.category?.name || product.type }}</div>
                     </div>
 
-                    <div class="text-4xl font-bold text-white mb-6 flex items-baseline gap-1">
+                    <div class="text-4xl font-bold text-white mb-2 flex items-baseline gap-1">
                         {{ product.price_monthly }}₽
                         <span class="text-sm text-gray-500 font-normal">/ месяц</span>
+                    </div>
+                    <div v-if="product.trials && product.trials.length && product.trials[0].active" class="mb-4">
+                        <span class="text-xs px-2 py-1 rounded bg-primary/10 text-primary border border-primary/30">
+                            Доступен триал: {{ product.trials[0].duration_days }} дней
+                        </span>
                     </div>
 
                     <p class="text-gray-400 mb-6 text-sm h-12 line-clamp-2">
@@ -52,12 +57,19 @@
                         </li>
                     </ul>
                     
-                    <button @click="openOrder(product)" :disabled="processing" 
+                    <div class="grid grid-cols-2 gap-3 mt-auto">
+                        <button @click="openOrder(product)" :disabled="processing" 
                         class="w-full btn-primary py-3 rounded-xl font-bold flex items-center justify-center gap-2 group-hover:shadow-[0_0_20px_rgba(166,203,64,0.4)] transition">
-                        <span v-if="!processing">Заказать</span>
-                        <span v-if="!processing">→</span>
-                        <span v-else>Обработка...</span>
-                    </button>
+                            <span v-if="!processing">Заказать</span>
+                            <span v-if="!processing">→</span>
+                            <span v-else>Обработка...</span>
+                        </button>
+                        <button v-if="product.trials && product.trials.length && product.trials[0].active"
+                            @click="startTrial(product)" :disabled="processing"
+                            class="w-full px-4 py-3 rounded-xl border border-white/10 text-gray-200 hover:bg-white/5">
+                            Пробный период
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -148,6 +160,22 @@ export default {
             this.payMethod = 'balance';
             this.orderError = '';
             this.orderModalVisible = true;
+        },
+        async startTrial(product) {
+            if (!this.isAuthenticated) {
+                this.$router.push({ path: '/login', query: { next: this.$route.fullPath } });
+                return;
+            }
+            this.processing = true;
+            this.orderError = '';
+            try {
+                await axios.post('/client/orders', { product_id: product.id, use_trial: true });
+                this.$router.push('/dashboard');
+            } catch (error) {
+                this.orderError = 'Ошибка заказа: ' + (error.response?.data?.error || error.message);
+            } finally {
+                this.processing = false;
+            }
         },
         closeOrder() {
             this.orderModalVisible = false;

@@ -135,7 +135,8 @@ class ServerProvisioningService
                 throw new Exception('Missing egg configuration for server creation (Pelican mode)');
             }
             $serverData['egg'] = $resources['egg_id'];
-            // In Pelican mode do not send startup/docker image or environment — managed on panel side
+            // In Pelican mode do not send startup/docker image; environment must be present (can be empty)
+            $serverData['environment'] = $resources['environment'] ?? [];
         }
 
         Log::info('Creating panel server', [
@@ -168,7 +169,16 @@ class ServerProvisioningService
 
     protected function findBestNode($product)
     {
-        // Logic to find best node. For MVP, just pick first active.
+        // Prefer nodes bound to product; fallback to any active node
+        $boundNodeIds = [];
+        try {
+            $boundNodeIds = $product->nodes()->pluck('nodes.id')->toArray();
+        } catch (\Throwable $e) {
+            $boundNodeIds = [];
+        }
+        if (!empty($boundNodeIds)) {
+            return Node::whereIn('id', $boundNodeIds)->where('is_active', true)->first();
+        }
         return Node::where('is_active', true)->first();
     }
     

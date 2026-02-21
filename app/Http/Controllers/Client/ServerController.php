@@ -104,6 +104,11 @@ class ServerController extends Controller
                         'gateway' => 'refund',
                         'status' => 'paid',
                     ]);
+                    \Log::info('Balance credited on server cancel', [
+                        'user_id' => $user->id,
+                        'server_id' => $server->id,
+                        'amount' => $refund,
+                    ]);
                 }
                 // Delete on panel and mark cancelled
                 try { $this->ptero->deleteServer($server->ptero_server_id); } catch (\Exception $e) {}
@@ -151,12 +156,22 @@ class ServerController extends Controller
                         'gateway' => 'balance',
                         'status' => 'paid',
                     ]);
+                    \Log::info('Balance debited on plan upgrade', [
+                        'user_id' => $user->id,
+                        'server_id' => $server->id,
+                        'difference' => $diff,
+                    ]);
                 } elseif ($diff < 0) {
                     $user->increment('balance', abs($diff));
                     $user->payments()->create([
                         'amount' => abs($diff),
                         'gateway' => 'refund',
                         'status' => 'paid',
+                    ]);
+                    \Log::info('Balance credited on plan downgrade', [
+                        'user_id' => $user->id,
+                        'server_id' => $server->id,
+                        'difference' => abs($diff),
                     ]);
                 }
                 // Update server resources in panel

@@ -33,7 +33,17 @@ class PaymentController extends Controller
         try {
             $url = $this->tbank->initPayment($payment);
             return response()->json(['url' => $url]);
+        } catch (\InvalidArgumentException $e) {
+            \Log::error('Payment init validation failed', [
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json(['error' => $e->getMessage()], 422);
         } catch (\Exception $e) {
+            \Log::error('Payment init failed', [
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage(),
+            ]);
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }

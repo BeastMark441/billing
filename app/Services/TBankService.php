@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use App\Models\Payment;
 use App\Models\User;
 use Exception;
+use InvalidArgumentException;
 
 class TBankService
 {
@@ -24,6 +26,9 @@ class TBankService
      */
     public function initPayment(Payment $payment)
     {
+        if (empty($this->terminalKey) || empty($this->password)) {
+            throw new InvalidArgumentException('Missing TBank configuration (terminal key or password)');
+        }
         $data = [
             'TerminalKey' => $this->terminalKey,
             'Amount' => $payment->amount * 100, // In kopecks
@@ -36,12 +41,27 @@ class TBankService
 
         $data['Token'] = $this->generateToken($data);
 
+        Log::info('TBank Init request', [
+            'payment_id' => $payment->id,
+            'payload' => array_merge($data, ['Password' => '***']),
+        ]);
+
         $response = Http::post($this->url . '/Init', $data);
 
         if ($response->failed() || !$response['Success']) {
-            throw new Exception('TBank Init Failed: ' . ($response['Message'] ?? 'Unknown error'));
+            Log::error('TBank Init failed', [
+                'payment_id' => $payment->id,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+            $message = $response['Message'] ?? ($response['Details'] ?? 'Unknown error');
+            throw new Exception('TBank Init Failed: ' . $message);
         }
 
+        Log::info('TBank Init success', [
+            'payment_id' => $payment->id,
+            'payment_url' => $response['PaymentURL'] ?? null,
+        ]);
         return $response['PaymentURL'];
     }
 
