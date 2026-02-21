@@ -15,7 +15,7 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $rules = [
             'name' => 'required|string',
             'description' => 'nullable|string',
             'type' => 'required|in:game,vps',
@@ -30,7 +30,14 @@ class ProductController extends Controller
             'is_hidden' => 'boolean',
             'nodes' => 'array',
             'nodes.*' => 'exists:nodes,id'
-        ]);
+        ];
+        if (config('services.pterodactyl.is_pelican')) {
+            $rules['resources.egg_id'] = 'required|integer';
+        } else {
+            $rules['resources.egg_id'] = 'required|integer';
+            $rules['resources.nest_id'] = 'required|integer';
+        }
+        $validated = $request->validate($rules);
 
         $product = Product::create($validated);
         
@@ -56,7 +63,7 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
-        $validated = $request->validate([
+        $rules = [
             'name' => 'string',
             'description' => 'nullable|string',
             'type' => 'in:game,vps',
@@ -67,7 +74,14 @@ class ProductController extends Controller
             'is_hidden' => 'boolean',
             'nodes' => 'array',
             'nodes.*' => 'exists:nodes,id'
-        ]);
+        ];
+        if (config('services.pterodactyl.is_pelican')) {
+            $rules['resources.egg_id'] = 'integer';
+        } else {
+            $rules['resources.egg_id'] = 'integer';
+            $rules['resources.nest_id'] = 'integer';
+        }
+        $validated = $request->validate($rules);
 
         $product->update($validated);
 

@@ -125,9 +125,13 @@ class ServerProvisioningService
             $serverData['nest'] = $resources['nest_id'];
             $serverData['egg'] = $resources['egg_id'];
         } else {
-            if (isset($resources['egg_id'])) {
-                $serverData['egg'] = $resources['egg_id'];
+            if (!isset($resources['egg_id'])) {
+                Log::error('Provisioning failed: missing egg for Pelican mode', [
+                    'order_id' => $order->id,
+                ]);
+                throw new Exception('Missing egg configuration for server creation (Pelican mode)');
             }
+            $serverData['egg'] = $resources['egg_id'];
         }
 
         Log::info('Creating panel server', [
