@@ -314,6 +314,24 @@
                             <input v-model.number="editingProduct.price_monthly" type="number" min="0" class="input-field w-full px-4 py-3 rounded-xl text-white" required>
                         </div>
                     </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Тип тарифа</label>
+                            <select v-model="editingProduct.type" class="input-field w-full px-4 py-3 rounded-xl text-white">
+                                <option value="game">Игровой</option>
+                                <option value="vps">VPS</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Категория</label>
+                            <select v-model="editingProduct.category_id" class="input-field w-full px-4 py-3 rounded-xl text-white">
+                                <option value="" disabled>Выберите категорию</option>
+                                <option v-for="c in categories" :key="c.id" :value="c.id">
+                                    {{ c.name }} ({{ c.slug }})
+                                </option>
+                            </select>
+                        </div>
+                    </div>
                     <div>
                         <label class="block text-sm text-gray-400 mb-1">Описание</label>
                         <textarea v-model="editingProduct.description" class="input-field w-full px-4 py-3 rounded-xl text-white h-24"></textarea>
@@ -330,6 +348,29 @@
                         <div>
                             <label class="block text-sm text-gray-400 mb-1">Disk, MB</label>
                             <input v-model.number="editingProduct.resources.disk" type="number" min="1024" class="input-field w-full px-4 py-3 rounded-xl text-white" required>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Порты, шт.</label>
+                            <input v-model.number="editingProduct.resources.ports" type="number" min="1" class="input-field w-full px-4 py-3 rounded-xl text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Nest ID</label>
+                            <input v-model.number="editingProduct.resources.nest_id" type="number" min="1" class="input-field w-full px-4 py-3 rounded-xl text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Egg ID</label>
+                            <input v-model.number="editingProduct.resources.egg_id" type="number" min="1" class="input-field w-full px-4 py-3 rounded-xl text-white">
+                        </div>
+                    </div>
+                    <div class="border-t border-white/10 pt-4">
+                        <label class="block text-sm font-bold mb-2">Привязка к нодам</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label v-for="node in nodes" :key="node.id" class="flex items-center gap-2 p-2 bg-white/5 rounded hover:bg-white/10 cursor-pointer">
+                                <input type="checkbox" :value="node.id" v-model="editingProduct.nodes" class="rounded border-white/20 bg-black/20">
+                                <span class="text-sm">{{ node.name }}</span>
+                            </label>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
@@ -480,13 +521,28 @@ export default {
             if (!this.editingProduct.resources) {
                 this.editingProduct.resources = { cpu: 100, ram: 1024, disk: 10240, ports: 1, nest_id: 1, egg_id: 1 };
             }
+            // normalize nodes to array of IDs for checkbox binding
+            if (Array.isArray(this.editingProduct.nodes)) {
+                this.editingProduct.nodes = this.editingProduct.nodes.map(n => n.id ?? n).filter(Boolean);
+            } else {
+                this.editingProduct.nodes = [];
+            }
+            // ensure category_id present for select
+            if (this.editingProduct.category && this.editingProduct.category.id && !this.editingProduct.category_id) {
+                this.editingProduct.category_id = this.editingProduct.category.id;
+            }
             this.productFormError = '';
             this.showEditProductModal = true;
         },
         async updateProduct() {
             if (!this.editingProduct) return;
             try {
-                await axios.put(`/admin/products/${this.editingProduct.id}`, this.editingProduct);
+                const payload = JSON.parse(JSON.stringify(this.editingProduct));
+                // remove relation objects to avoid backend validation issues
+                delete payload.category;
+                // nodes must be array of ids
+                if (!Array.isArray(payload.nodes)) payload.nodes = [];
+                await axios.put(`/admin/products/${payload.id}`, payload);
                 this.showEditProductModal = false;
                 this.fetchData();
             } catch (error) {

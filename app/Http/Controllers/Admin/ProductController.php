@@ -31,6 +31,15 @@ class ProductController extends Controller
             'nodes' => 'array',
             'nodes.*' => 'exists:nodes,id'
         ];
+        // Normalize payload: nodes can come as array of objects; convert to ID list
+        if ($request->has('nodes') && is_array($request->input('nodes'))) {
+            $request->merge([
+                'nodes' => array_values(array_filter(array_map(function ($n) {
+                    if (is_array($n)) return $n['id'] ?? null;
+                    return $n;
+                }, $request->input('nodes'))))
+            ]);
+        }
         if (config('services.pterodactyl.is_pelican')) {
             $rules['resources.egg_id'] = 'required|integer';
         } else {
@@ -79,6 +88,20 @@ class ProductController extends Controller
             'nodes' => 'array',
             'nodes.*' => 'exists:nodes,id'
         ];
+        // Normalize incoming payload
+        if ($request->has('nodes') && is_array($request->input('nodes'))) {
+            $request->merge([
+                'nodes' => array_values(array_filter(array_map(function ($n) {
+                    if (is_array($n)) return $n['id'] ?? null;
+                    return $n;
+                }, $request->input('nodes'))))
+            ]);
+        }
+        if ($request->filled('category_id') === false && $request->has('category_id')) {
+            // Convert empty string to null to avoid exists validator exploding
+            $request->merge(['category_id' => null]);
+            unset($rules['category_id']); // allow null silently
+        }
         if (config('services.pterodactyl.is_pelican')) {
             $rules['resources.egg_id'] = 'integer';
         } else {
