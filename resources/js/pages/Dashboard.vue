@@ -450,8 +450,12 @@ export default {
     async mounted() {
         // Check for payment success/fail params
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('payment') === 'success') {
-            alert('Оплата прошла успешно! Баланс пополнен.');
+        const p = urlParams.get('payment');
+        if (p === 'success') {
+            alert('Оплата прошла успешно! Баланс будет зачислен в ближайшее время.');
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else if (p === 'fail') {
+            alert('Оплата не удалась. Проверьте данные и попробуйте снова или обратитесь в поддержку.');
             window.history.replaceState({}, document.title, window.location.pathname);
         }
 

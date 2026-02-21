@@ -203,9 +203,14 @@ export default {
             this.processing = true;
             this.orderError = '';
             try {
-                await axios.post('/client/orders', { product_id: this.selectedProduct.id, coupon: this.couponCode || undefined, pay_method: this.payMethod });
-                this.closeOrder();
-                this.$router.push('/dashboard');
+                const res = await axios.post('/client/orders', { product_id: this.selectedProduct.id, coupon: this.couponCode || undefined, pay_method: this.payMethod });
+                if (res.data && res.data.url && this.payMethod === 'gateway') {
+                    window.location.href = res.data.url;
+                    return;
+                } else {
+                    this.closeOrder();
+                    this.$router.push('/dashboard');
+                }
             } catch (error) {
                 this.orderError = 'Ошибка заказа: ' + (error.response?.data?.error || error.message);
             } finally {

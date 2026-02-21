@@ -23,6 +23,8 @@ class OrderController extends Controller
         $request->validate([
             'product_id' => 'required|exists:products,id',
             'use_trial' => 'sometimes|boolean',
+            'pay_method' => 'sometimes|in:balance,gateway',
+            'coupon' => 'sometimes|string|max:64'
         ]);
 
         $product = Product::findOrFail($request->product_id);
@@ -75,41 +77,98 @@ class OrderController extends Controller
             }
         }
 
-        // Simple balance check for paid flow
-        if ($user->balance < $product->price_monthly) {
+        // Calculate final amount with coupon if provided
+        $finalAmount = $product->price_monthly;
+        if ($request->filled('coupon')) {
+            $code = trim($request->coupon);
+            $coupon = \App\Models\Coupon::whereRaw('UPPER(code) = ?', [mb_strtoupper($code)])->first();
+            if ($coupon && (!$coupon->expires_at || $coupon->expires_at->isFuture())) {
+                $discount = max(0, (float) $coupon->discount);
+                $finalAmount = max(0, round($finalAmount - $discount, 2));
+            }
+        }
+
+        // Gateway payment flow
+        if ($request->input('pay_method') === 'gateway') {
+            if ($finalAmount <= 0) {
+                // Free order due to coupon
+                try {
+                    return DB::transaction(function () use ($user, $product) {
+                        $order = Order::create([
+                            'user_id' => $user->id,
+                            'product_id' => $product->id,
+                            'amount' => 0,
+                            'status' => 'paid',
+                        ]);
+                        $server = $this->provisioningService->provision($order);
+                        return response()->json([
+                            'message' => 'Order placed and server provisioned successfully',
+                            'order' => $order,
+                            'server' => $server,
+                        ], 201);
+                    });
+                } catch (\Exception $e) {
+                    return response()->json(['error' => 'Order processing failed: ' . $e->getMessage()], 500);
+                }
+            }
+            try {
+                return DB::transaction(function () use ($user, $product, $finalAmount) {
+                    $order = Order::create([
+                        'user_id' => $user->id,
+                        'product_id' => $product->id,
+                        'amount' => $finalAmount,
+                        'status' => 'awaiting_payment',
+                    ]);
+                    $payment = $order->payments()->create([
+                        'user_id' => $user->id,
+                        'amount' => $finalAmount,
+                        'gateway' => 'tbank',
+                        'status' => 'pending',
+                    ]);
+                    // Init payment with gateway and return redirect URL
+                    $url = app(\App\Services\TBankService::class)->initPayment($payment);
+                    return response()->json(['url' => $url, 'order_id' => $order->id], 200);
+                });
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Order payment init failed: ' . $e->getMessage()], 500);
+            }
+        }
+
+        // Simple balance check for paid (balance) flow
+        if ($user->balance < $finalAmount) {
             \Log::warning('Insufficient balance for order', [
                 'user_id' => $user->id,
                 'balance' => $user->balance,
-                'price' => $product->price_monthly,
+                'price' => $finalAmount,
             ]);
             return response()->json(['error' => 'Insufficient balance'], 402);
         }
 
         try {
-            return DB::transaction(function () use ($user, $product) {
+            return DB::transaction(function () use ($user, $product, $finalAmount) {
                 // Create Order
                 $order = Order::create([
                     'user_id' => $user->id,
                     'product_id' => $product->id,
-                    'amount' => $product->price_monthly,
+                    'amount' => $finalAmount,
                     'status' => 'paid', // Immediately paid via balance
                 ]);
 
                 // Deduct Balance
                 $oldBalance = $user->balance;
-                $user->decrement('balance', $product->price_monthly);
+                $user->decrement('balance', $finalAmount);
                 \Log::info('Balance deducted for order', [
                     'user_id' => $user->id,
                     'order_id' => $order->id,
                     'old_balance' => $oldBalance,
-                    'amount' => $product->price_monthly,
+                    'amount' => $finalAmount,
                     'new_balance' => $user->balance - 0, // value after decrement in memory may be stale; for logs we compute anyway
                 ]);
 
                 // Record Payment
                 $order->payments()->create([
                     'user_id' => $user->id,
-                    'amount' => $product->price_monthly,
+                    'amount' => $finalAmount,
                     'gateway' => 'balance',
                     'status' => 'completed',
                 ]);

@@ -11,7 +11,7 @@ class BalanceController extends Controller
     {
         return response()->json([
             'balance' => $request->user()->balance,
-            'history' => $request->user()->payments()->where('status', 'paid')->latest()->get(),
+            'history' => $request->user()->payments()->where('status', 'completed')->latest()->get(),
         ]);
     }
 }

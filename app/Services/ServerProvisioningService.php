@@ -109,16 +109,32 @@ class ServerProvisioningService
             ],
         ];
 
+        $product->loadMissing('category');
+        $preset = [];
+        $catSlug = null;
+        try {
+            if (method_exists($product, 'category') && $product->relationLoaded('category') && $product->getRelation('category')) {
+                $catSlug = $product->getRelation('category')->slug ?? null;
+            } elseif (is_string($product->category)) {
+                $catSlug = $product->category;
+            } elseif (!empty($product->type) && is_string($product->type)) {
+                $catSlug = $product->type;
+            }
+        } catch (\Throwable $e) {
+            $catSlug = null;
+        }
+        if ($catSlug) {
+            $preset = config('server_presets.' . $catSlug, []);
+        }
+
         if (!$this->ptero->isPelican()) {
             // For classic Pterodactyl, allow startup and docker image unless explicitly overridden
             $serverData['docker_image'] = $resources['docker_image'] ?? 'ghcr.io/pterodactyl/yolks:java_17';
             $serverData['startup'] = $resources['startup'] ?? 'java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar server.jar';
-            if (!isset($serverData['environment'])) {
-                $serverData['environment'] = $resources['environment'] ?? [
-                    'SERVER_JARFILE' => 'server.jar',
-                    'VANILLA_VERSION' => 'latest',
-                ];
-            }
+            $serverData['environment'] = array_merge(
+                $preset['environment'] ?? [],
+                $resources['environment'] ?? ['SERVER_JARFILE' => 'server.jar']
+            );
             if (!isset($resources['egg_id']) || !isset($resources['nest_id'])) {
                 Log::error('Provisioning failed: missing egg/nest for Pterodactyl mode', [
                     'order_id' => $order->id,
@@ -136,7 +152,10 @@ class ServerProvisioningService
             }
             $serverData['egg'] = $resources['egg_id'];
             // In Pelican mode do not send startup/docker image; environment must be present (can be empty)
-            $serverData['environment'] = $resources['environment'] ?? [];
+            $serverData['environment'] = array_merge(
+                $preset['environment'] ?? [],
+                $resources['environment'] ?? []
+            );
         }
 
         Log::info('Creating panel server', [
