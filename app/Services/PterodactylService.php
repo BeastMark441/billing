@@ -12,6 +12,7 @@ class PterodactylService
     protected $clientApiKey;
     protected $verify;
     protected $caPath;
+    protected $isPelican;
 
     public function __construct()
     {
@@ -20,6 +21,7 @@ class PterodactylService
         $this->clientApiKey = config('services.pterodactyl.client_key'); // Client API Key (Usually generated for admin)
         $this->verify = config('services.pterodactyl.verify', true);
         $this->caPath = config('services.pterodactyl.ca'); // path to cacert.pem if provided
+        $this->isPelican = (bool) (config('services.pterodactyl.is_pelican', false));
     }
 
     protected function client()
@@ -59,9 +61,33 @@ class PterodactylService
         return $response->json()['attributes'];
     }
 
+    public function isPelican(): bool
+    {
+        return $this->isPelican;
+    }
+
+    public function findUserByEmail(string $email): ?array
+    {
+        $response = $this->client()->get('/api/application/users', [
+            'filter' => ['email' => $email],
+            'include' => '',
+            'per_page' => 1,
+        ]);
+        if ($response->failed()) {
+            return null;
+        }
+        $data = $response->json()['data'] ?? [];
+        if (count($data) === 0) {
+            return null;
+        }
+        return $data[0]['attributes'] ?? null;
+    }
+
     public function createServer($data)
     {
-        // $data: name, user, nest, egg, docker_image, startup, environment, limits, feature_limits, allocation
+        if ($this->isPelican && isset($data['nest'])) {
+            unset($data['nest']);
+        }
         $response = $this->client()->post('/api/application/servers', $data);
         if ($response->failed()) {
             throw new Exception('Pterodactyl Server Creation Failed: ' . $response->body());

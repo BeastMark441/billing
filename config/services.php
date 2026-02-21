@@ -41,6 +41,7 @@ return [
         'client_key' => env('PTERODACTYL_CLIENT_API_KEY'),
         'verify' => env('PTERODACTYL_VERIFY_SSL', true),
         'ca' => env('PTERODACTYL_CACERT_PATH'),
+        'is_pelican' => env('PTERODACTYL_IS_PELICAN', false),
     ],
 
     'tbank' => [
