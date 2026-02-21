@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Ticket extends Model
 {
     protected $fillable = [
-        'user_id', 'subject', 'status', 'priority',
+        'user_id', 'server_id', 'subject', 'status', 'priority',
         'category', 'status_v2', 'assigned_to', 'sla_due_at', 'last_reply_at', 'tags'
     ];
 
@@ -24,6 +24,10 @@ class Ticket extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function server(): BelongsTo
+    {
+        return $this->belongsTo(Server::class);
+    }
     public function messages(): HasMany
     {
         return $this->hasMany(TicketMessage::class);

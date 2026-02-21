@@ -110,7 +110,7 @@
                                 <div>
                                     <h3 class="font-bold text-lg">{{ server.name }}</h3>
                                     <div class="flex flex-wrap items-center gap-3 text-sm text-gray-400">
-                                        <span class="bg-gray-800 px-2 py-0.5 rounded text-xs font-mono border border-white/5">{{ server.ip }}:{{ server.port }}</span>
+                                        <span class="bg-gray-800 px-2 py-0.5 rounded text-xs font-mono border border-white/5">{{ server.endpoint }}</span>
                                         <span :class="{'text-green-400': server.status === 'active', 'text-red-400': server.status !== 'active'}" class="text-xs uppercase font-bold tracking-wider flex items-center gap-1">
                                             <span class="w-1.5 h-1.5 rounded-full" :class="{'bg-green-400': server.status === 'active', 'bg-red-400': server.status !== 'active'}"></span>
                                             {{ server.status }}
@@ -389,6 +389,12 @@
                         <option value="medium">Средний приоритет</option>
                         <option value="high">Высокий приоритет</option>
                     </select>
+                    <select v-model="newTicket.server_id" class="input-field w-full px-4 py-3 rounded-xl text-white">
+                        <option value="">Не связывать с тарифом</option>
+                        <option v-for="s in servers" :key="s.id" :value="s.id">
+                            {{ s.name }} — {{ s.endpoint }}
+                        </option>
+                    </select>
                     <textarea v-model="newTicket.message" placeholder="Опишите вашу проблему..." class="input-field w-full px-4 py-3 rounded-xl text-white h-32" required></textarea>
                     <input type="file" multiple @change="handleCreateFiles" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" class="text-xs">
                     <div v-if="createImagePreviews.length" class="flex gap-2 flex-wrap">
@@ -431,7 +437,7 @@ export default {
             tickets: [],
             viewingTicket: null,
             showNewTicketModal: false,
-            newTicket: { subject: '', category: '', message: '', priority: 'medium' },
+            newTicket: { subject: '', category: '', message: '', priority: 'medium', server_id: '' },
             createAttachments: [],
             createImagePreviews: [],
             replyMessage: '',
@@ -530,10 +536,11 @@ export default {
                 fd.append('category', this.newTicket.category);
                 fd.append('priority', this.newTicket.priority);
                 fd.append('message', this.newTicket.message);
+                if (this.newTicket.server_id) fd.append('server_id', this.newTicket.server_id);
                 this.createAttachments.forEach(f => fd.append('attachments[]', f));
                 await axios.post('/client/tickets', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
                 this.showNewTicketModal = false;
-                this.newTicket = { subject: '', category: '', message: '', priority: 'medium' };
+                this.newTicket = { subject: '', category: '', message: '', priority: 'medium', server_id: '' };
                 this.createAttachments = [];
                 this.createImagePreviews = [];
                 this.fetchTickets();

@@ -19,6 +19,25 @@ class UserController extends Controller
         return $user->load(['servers', 'payments', 'tickets', 'loginLogs']);
     }
 
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:32',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'balance' => 0,
+            'role' => 'user',
+        ]);
+
+        return response()->json($user, 201);
+    }
+
     public function update(Request $request, User $user)
     {
         $validated = $request->validate([

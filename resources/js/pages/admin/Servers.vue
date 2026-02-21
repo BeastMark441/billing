@@ -72,7 +72,7 @@
                         <select v-model="form.product_id" class="input-field w-full px-4 py-2 rounded-lg text-white" required>
                             <option value="" disabled>Выберите тариф</option>
                             <option v-for="p in products" :key="p.id" :value="p.id">
-                                {{ p.name }} ({{ p.category }})
+                                {{ p.name }} ({{ p.category?.name || 'Без категории' }})
                             </option>
                         </select>
                     </div>

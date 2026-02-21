@@ -13,6 +13,7 @@ class Node extends Model
         'name',
         'ptero_id',
         'ip',
+        'public_host',
         'port_range_start',
         'port_range_end',
         'is_active',

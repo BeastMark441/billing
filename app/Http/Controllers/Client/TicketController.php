@@ -25,12 +25,21 @@ class TicketController extends Controller
             'message' => 'required|string',
             'priority' => 'in:low,medium,high',
             'category' => 'required|string|max:255',
+            'server_id' => 'nullable|exists:servers,id',
             'attachments.*' => 'file|max:10240|mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg',
         ]);
 
         try {
             return DB::transaction(function () use ($request, $validated) {
+                $serverId = $validated['server_id'] ?? null;
+                if ($serverId) {
+                    $owns = $request->user()->servers()->where('id', $serverId)->exists();
+                    if (!$owns) {
+                        abort(422, 'Invalid server_id');
+                    }
+                }
                 $ticket = $request->user()->tickets()->create([
+                    'server_id' => $serverId,
                     'subject' => $validated['subject'],
                     'priority' => $validated['priority'] ?? 'medium',
                     'status' => 'open',
@@ -67,7 +76,7 @@ class TicketController extends Controller
                     ],
                 ]);
 
-                return $ticket->load(['messages.user']);
+                return $ticket->load(['messages.user','server']);
             });
         } catch (\Exception $e) {
             Log::error('Ticket creation failed: ' . $e->getMessage());

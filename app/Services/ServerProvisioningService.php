@@ -92,12 +92,6 @@ class ServerProvisioningService
         $serverData = [
             'name' => $product->name . ' - ' . $user->name,
             'user' => $user->ptero_id,
-            'docker_image' => $resources['docker_image'] ?? 'ghcr.io/pterodactyl/yolks:java_17',
-            'startup' => $resources['startup'] ?? 'java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar server.jar',
-            'environment' => $resources['environment'] ?? [
-                'SERVER_JARFILE' => 'server.jar',
-                'VANILLA_VERSION' => 'latest',
-            ],
             'limits' => [
                 'memory' => $resources['ram'],
                 'swap' => 0,
@@ -116,6 +110,15 @@ class ServerProvisioningService
         ];
 
         if (!$this->ptero->isPelican()) {
+            // For classic Pterodactyl, allow startup and docker image unless explicitly overridden
+            $serverData['docker_image'] = $resources['docker_image'] ?? 'ghcr.io/pterodactyl/yolks:java_17';
+            $serverData['startup'] = $resources['startup'] ?? 'java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar server.jar';
+            if (!isset($serverData['environment'])) {
+                $serverData['environment'] = $resources['environment'] ?? [
+                    'SERVER_JARFILE' => 'server.jar',
+                    'VANILLA_VERSION' => 'latest',
+                ];
+            }
             if (!isset($resources['egg_id']) || !isset($resources['nest_id'])) {
                 Log::error('Provisioning failed: missing egg/nest for Pterodactyl mode', [
                     'order_id' => $order->id,
@@ -132,6 +135,7 @@ class ServerProvisioningService
                 throw new Exception('Missing egg configuration for server creation (Pelican mode)');
             }
             $serverData['egg'] = $resources['egg_id'];
+            // In Pelican mode do not send startup/docker image or environment — managed on panel side
         }
 
         Log::info('Creating panel server', [

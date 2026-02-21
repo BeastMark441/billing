@@ -39,6 +39,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/servers/{server}', [ServerController::class, 'show']);
         Route::get('/servers/{server}/resources', [ServerController::class, 'resources']);
         Route::post('/servers/{server}/power', [ServerController::class, 'power']);
+        Route::post('/servers/{server}/cancel', [ServerController::class, 'cancel']);
+        Route::post('/servers/{server}/change-plan', [ServerController::class, 'changePlan']);
         
         Route::post('/orders', [OrderController::class, 'store']);
         Route::get('/orders', [OrderController::class, 'index']);

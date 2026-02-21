@@ -45,7 +45,7 @@ class ProductController extends Controller
             $product->nodes()->sync($validated['nodes']);
         }
 
-        return response()->json($product->load('nodes'), 201);
+        return response()->json($product->load(['nodes','category']), 201);
     }
 
     public function destroy(Product $product)
@@ -70,6 +70,10 @@ class ProductController extends Controller
             'category_id' => 'exists:categories,id',
             'price_monthly' => 'numeric',
             'resources' => 'array',
+            'resources.cpu' => 'integer',
+            'resources.ram' => 'integer',
+            'resources.disk' => 'integer',
+            'resources.ports' => 'integer',
             'is_active' => 'boolean',
             'is_hidden' => 'boolean',
             'nodes' => 'array',
@@ -83,7 +87,13 @@ class ProductController extends Controller
         }
         $validated = $request->validate($rules);
 
-        $product->update($validated);
+        $data = $validated;
+        if (isset($validated['resources'])) {
+            $current = $product->resources ?: [];
+            $product->resources = array_merge($current, $validated['resources']);
+            unset($data['resources']);
+        }
+        $product->update($data);
 
         if (isset($validated['nodes'])) {
             $product->nodes()->sync($validated['nodes']);

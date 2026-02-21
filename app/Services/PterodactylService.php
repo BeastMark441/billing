@@ -122,6 +122,19 @@ class PterodactylService
         return true;
     }
     
+    public function updateServerBuild($serverId, array $limits, array $featureLimits = [])
+    {
+        $payload = [
+            'limits' => $limits,
+            'feature_limits' => $featureLimits,
+        ];
+        $response = $this->client()->patch("/api/application/servers/{$serverId}/build", $payload);
+        if ($response->failed()) {
+            throw new Exception('Pterodactyl Server Build Update Failed: ' . $response->body());
+        }
+        return true;
+    }
+    
     public function getNodes()
     {
         $response = $this->client()->get('/api/application/nodes');

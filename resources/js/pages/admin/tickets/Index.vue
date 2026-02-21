@@ -114,6 +114,17 @@
                         <button @click="applyStatus" class="btn-primary px-3 py-1 rounded text-xs">Применить</button>
                     </div>
                     <textarea v-model="statusForm.comment" placeholder="Комментарий (обязателен при смене статуса)" class="input-field mt-2 w-full px-3 py-2 rounded text-sm"></textarea>
+                    <div v-if="hasServer" class="mt-4 flex flex-wrap items-center gap-3">
+                        <div class="text-sm text-gray-400">
+                            Связан с тарифом:
+                            <span class="text-white font-bold">
+                                #{{ viewingTicket.server?.id || viewingTicket.server_id }}
+                                <span v-if="viewingTicket.server?.name">— {{ viewingTicket.server.name }}</span>
+                            </span>
+                        </div>
+                        <a v-if="clientLink" :href="clientLink" target="_blank" class="btn-primary px-3 py-1 rounded text-xs">Открыть в Билинге</a>
+                        <a :href="panelLink" target="_blank" class="px-3 py-1 rounded text-xs bg-white/5 hover:bg-white/10">Открыть в Панели Управления</a>
+                    </div>
                 </div>
 
                 <div class="flex-grow overflow-y-auto space-y-4 mb-4 pr-2 custom-scrollbar">
@@ -181,6 +192,23 @@ export default {
             editText: '',
             filters: { q: '', status_v2: '', priority: '', category: '', assigned_to: '' },
             statusForm: { status_v2: 'open', priority: 'medium', assigned_to: '', category: '', comment: '' }
+        }
+    },
+    computed: {
+        hasServer() {
+            return !!(this.viewingTicket && (this.viewingTicket.server_id || this.viewingTicket.server));
+        },
+        clientLink() {
+            if (!this.viewingTicket) return '';
+            const id = this.viewingTicket.server_id || (this.viewingTicket.server && this.viewingTicket.server.id);
+            if (!id) return '';
+            return this.$router.resolve({ name: 'ServerControl', params: { id } }).href;
+        },
+        panelLink() {
+            if (this.viewingTicket && this.viewingTicket.server && this.viewingTicket.server.panel_url) {
+                return this.viewingTicket.server.panel_url;
+            }
+            return 'https://panel.nodeum.ru';
         }
     },
     async mounted() {
