@@ -270,6 +270,16 @@
                             <input v-model.number="newProduct.resources.egg_id" placeholder="Напр.: 1" type="number" min="1" class="input-field w-full px-4 py-3 rounded-xl text-white" required>
                         </div>
                     </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Базы Данных, шт.</label>
+                            <input v-model.number="newProduct.resources.databases" placeholder="0" type="number" min="0" class="input-field w-full px-4 py-3 rounded-xl text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Резервные Копии, шт.</label>
+                            <input v-model.number="newProduct.resources.backups" placeholder="0" type="number" min="0" class="input-field w-full px-4 py-3 rounded-xl text-white">
+                        </div>
+                    </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <label class="flex items-center gap-2">
@@ -364,6 +374,16 @@
                             <input v-model.number="editingProduct.resources.egg_id" type="number" min="1" class="input-field w-full px-4 py-3 rounded-xl text-white">
                         </div>
                     </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Базы Данных, шт.</label>
+                            <input v-model.number="editingProduct.resources.databases" type="number" min="0" class="input-field w-full px-4 py-3 rounded-xl text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Резервные Копии, шт.</label>
+                            <input v-model.number="editingProduct.resources.backups" type="number" min="0" class="input-field w-full px-4 py-3 rounded-xl text-white">
+                        </div>
+                    </div>
                     <div class="border-t border-white/10 pt-4">
                         <label class="block text-sm font-bold mb-2">Привязка к нодам</label>
                         <div class="grid grid-cols-2 gap-2">
@@ -431,7 +451,9 @@ export default {
                     disk: 10240,
                     ports: 1,
                     nest_id: 1,
-                    egg_id: 1
+                    egg_id: 1,
+                    databases: 0,
+                    backups: 0
                 },
                 is_active: true,
                 is_hidden: false,
@@ -497,7 +519,7 @@ export default {
                     type: 'game',
                     category_id: '',
                     price_monthly: '',
-                    resources: { cpu: 100, ram: 1024, disk: 10240, ports: 1, nest_id: 1, egg_id: 1 },
+                    resources: { cpu: 100, ram: 1024, disk: 10240, ports: 1, nest_id: 1, egg_id: 1, databases: 0, backups: 0 },
                     is_active: true,
                     is_hidden: false,
                     nodes: []
@@ -521,6 +543,9 @@ export default {
             if (!this.editingProduct.resources) {
                 this.editingProduct.resources = { cpu: 100, ram: 1024, disk: 10240, ports: 1, nest_id: 1, egg_id: 1 };
             }
+            // Ensure optional keys are present
+            if (typeof this.editingProduct.resources.databases !== 'number') this.editingProduct.resources.databases = 0;
+            if (typeof this.editingProduct.resources.backups !== 'number') this.editingProduct.resources.backups = 0;
             // normalize nodes to array of IDs for checkbox binding
             if (Array.isArray(this.editingProduct.nodes)) {
                 this.editingProduct.nodes = this.editingProduct.nodes.map(n => n.id ?? n).filter(Boolean);

@@ -38,10 +38,12 @@
                                     {{ server.status }}
                                 </span>
                             </td>
-                            <td class="p-4 flex gap-2">
+                            <td class="p-4 flex gap-2 flex-wrap">
                                 <button v-if="server.status === 'active'" @click="changeStatus(server, 'suspended')" class="text-yellow-400 hover:text-white text-xs bg-yellow-400/10 px-2 py-1 rounded">Suspend</button>
                                 <button v-else @click="changeStatus(server, 'active')" class="text-green-400 hover:text-white text-xs bg-green-400/10 px-2 py-1 rounded">Unsuspend</button>
                                 
+                                <button @click="openChangePlan(server)" class="text-blue-400 hover:text-white text-xs bg-blue-400/10 px-2 py-1 rounded">Изм. тариф</button>
+                                <button @click="cancelWithRefund(server)" class="text-red-400 hover:text-white text-xs bg-red-400/10 px-2 py-1 rounded">Отмена+Возврат</button>
                                 <button @click="deleteServer(server)" class="text-red-400 hover:text-white text-xs bg-red-400/10 px-2 py-1 rounded">Delete</button>
                             </td>
                         </tr>
@@ -50,6 +52,31 @@
             </div>
         </div>
 
+        <!-- Change Plan Modal -->
+        <div v-if="showChangePlan" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+            <div class="glass-card p-6 rounded-2xl w-full max-w-md">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold">Сменить тариф</h2>
+                    <button @click="closeChangePlan" class="text-gray-400 hover:text-white">✕</button>
+                </div>
+                <form @submit.prevent="confirmChangePlan" class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Новый тариф</label>
+                        <select v-model="changePlanForm.product_id" class="input-field w-full px-4 py-2 rounded-lg text-white" required>
+                            <option value="" disabled>Выберите тариф</option>
+                            <option v-for="p in products" :key="p.id" :value="p.id">
+                                {{ p.name }} ({{ p.category?.name || 'Без категории' }}) — {{ p.price_monthly }} ₽
+                            </option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end gap-3">
+                        <button type="button" @click="closeChangePlan" class="text-gray-400 px-4">Отмена</button>
+                        <button type="submit" class="btn-primary px-6 py-2 rounded-lg">Сменить</button>
+                    </div>
+                    <div v-if="changePlanError" class="text-red-400 text-sm">{{ changePlanError }}</div>
+                </form>
+            </div>
+        </div>
         <!-- Create Server Modal -->
         <div v-if="showCreate" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
             <div class="glass-card p-6 rounded-2xl w-full max-w-lg">
@@ -100,7 +127,13 @@ export default {
             form: {
                 user_id: '',
                 product_id: ''
-            }
+            },
+            showChangePlan: false,
+            changePlanForm: {
+                server_id: null,
+                product_id: ''
+            },
+            changePlanError: ''
         }
     },
     computed: {
@@ -164,6 +197,38 @@ export default {
                 alert('Сервер выдан');
             } catch (error) {
                 alert(error.response?.data?.error || 'Не удалось создать сервер');
+            }
+        },
+        openChangePlan(server) {
+            this.changePlanForm.server_id = server.id;
+            this.changePlanForm.product_id = '';
+            this.changePlanError = '';
+            this.showChangePlan = true;
+        },
+        closeChangePlan() {
+            this.showChangePlan = false;
+        },
+        async confirmChangePlan() {
+            if (!this.changePlanForm.server_id || !this.changePlanForm.product_id) return;
+            try {
+                await axios.post(`/admin/servers/${this.changePlanForm.server_id}/change-plan`, {
+                    product_id: this.changePlanForm.product_id
+                });
+                this.showChangePlan = false;
+                await this.fetchServers();
+                alert('Тариф изменён');
+            } catch (error) {
+                this.changePlanError = error.response?.data?.error || 'Не удалось сменить тариф';
+            }
+        },
+        async cancelWithRefund(server) {
+            if (!confirm('Отменить сервер и выполнить пропорциональный возврат пользователю?')) return;
+            try {
+                const res = await axios.post(`/admin/servers/${server.id}/cancel`);
+                await this.fetchServers();
+                alert(`Сервер отменён. Возврат: ${res.data?.refund ?? 0} ₽`);
+            } catch (error) {
+                alert(error.response?.data?.error || 'Не удалось отменить сервер');
             }
         }
     }

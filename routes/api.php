@@ -67,6 +67,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::apiResource('nodes', NodeController::class);
         Route::apiResource('users', UserController::class);
         Route::apiResource('servers', \App\Http\Controllers\Admin\ServerController::class);
+        Route::post('/servers/{server}/cancel', [\App\Http\Controllers\Admin\ServerController::class, 'cancel']);
+        Route::post('/servers/{server}/change-plan', [\App\Http\Controllers\Admin\ServerController::class, 'changePlan']);
         Route::apiResource('tickets', AdminTicketController::class)->except(['store']);
         Route::post('/tickets/{ticket}/reply', [AdminTicketController::class, 'reply']);
         Route::put('/messages/{message}', [AdminTicketMessageController::class, 'update']);
