@@ -27,13 +27,15 @@ class UserController extends Controller
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        $user = User::create([
+        $user = new User();
+        $user->forceFill([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'balance' => 0,
             'role' => 'user',
         ]);
+        $user->save();
 
         return response()->json($user, 201);
     }
@@ -54,7 +56,17 @@ class UserController extends Controller
             'vk' => 'nullable|string|max:50',
         ]);
 
-        $user->update($validated);
+        $user->fill($validated);
+        
+        // Manually update protected fields
+        if (isset($validated['balance'])) {
+            $user->forceFill(['balance' => $validated['balance']]);
+        }
+        if (isset($validated['role'])) {
+            $user->forceFill(['role' => $validated['role']]);
+        }
+        
+        $user->save();
         return $user;
     }
 

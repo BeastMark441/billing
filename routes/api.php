@@ -19,14 +19,19 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\TicketMessageController as AdminTicketMessageController;
 use App\Http\Controllers\Admin\TicketController as AdminTicketController;
 
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/payment/callback', [PaymentController::class, 'callback']);
+Route::middleware('throttle:6,1')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+});
 
-// Public catalog endpoints
-Route::get('/products', [ProductController::class, 'index']);
+Route::middleware('throttle:api')->group(function () {
+    Route::post('/payment/callback', [PaymentController::class, 'callback']);
 
-Route::middleware(['auth:sanctum'])->group(function () {
+    // Public catalog endpoints
+    Route::get('/products', [ProductController::class, 'index']);
+
+    Route::middleware(['auth:sanctum'])->group(function () {
+
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
@@ -80,4 +85,5 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/categories/{category}/visibility', [CategoryController::class, 'setVisibility']);
         Route::post('/categories/{category}/products/visibility', [CategoryController::class, 'setProductsVisibility']);
     });
+});
 });

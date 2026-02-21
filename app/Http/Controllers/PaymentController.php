@@ -52,10 +52,19 @@ class PaymentController extends Controller
 
     public function callback(Request $request)
     {
-        Log::info('TBank callback received', ['payload' => $request->all()]);
+        Log::info('TBank callback received', [
+            'OrderId' => $request->OrderId,
+            'Status' => $request->Status,
+            'PaymentId' => $request->PaymentId,
+            'Amount' => $request->Amount,
+        ]);
+        
         try {
             if (!$this->tbank->checkCallback($request->all())) {
-                Log::warning('TBank callback token verification failed', ['payload' => $request->all()]);
+                Log::warning('TBank callback token verification failed', [
+                    'OrderId' => $request->OrderId,
+                    'remote_ip' => $request->ip()
+                ]);
                 return response('Invalid Token', 400);
             }
         } catch (\Throwable $e) {

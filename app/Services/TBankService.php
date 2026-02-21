@@ -70,6 +70,9 @@ class TBankService
      */
     public function checkCallback($data)
     {
+        if (empty($data['Token'])) {
+            return false;
+        }
         $token = $data['Token'];
         unset($data['Token']);
         

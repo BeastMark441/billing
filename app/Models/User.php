@@ -22,8 +22,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'balance',
-        'role',
+        // 'balance', // Protected from mass assignment
+        // 'role',    // Protected from mass assignment
         'ptero_id',
         'first_name',
         'last_name',
