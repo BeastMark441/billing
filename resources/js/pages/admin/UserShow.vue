@@ -1,7 +1,7 @@
 <template>
     <div v-if="user" class="space-y-8">
         <div class="flex items-center gap-4">
-            <router-link to="/admin/users" class="text-gray-400 hover:text-white">← Назад</router-link>
+            <router-link to="/backoffice/users" class="text-gray-400 hover:text-white">← Назад</router-link>
             <h1 class="text-3xl font-bold">Пользователь: {{ user.name }}</h1>
             <span v-if="user.is_blocked" class="bg-red-500/20 text-red-400 px-3 py-1 rounded-lg text-sm font-bold uppercase">Заблокирован</span>
         </div>
@@ -17,7 +17,7 @@
         <div v-if="activeTab === 'overview'" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2 glass-card p-6 rounded-2xl">
                 <div class="flex items-center justify-between mb-4">
-                    <router-link to="/admin/users" class="text-gray-400 hover:text-white text-sm">← Назад</router-link>
+                    <router-link to="/backoffice/users" class="text-gray-400 hover:text-white text-sm">← Назад</router-link>
                     <button @click="deleteUser" class="text-red-400 hover:text-white bg-red-400/10 px-3 py-1.5 rounded text-sm font-bold">Удалить пользователя</button>
                 </div>
                 <h2 class="text-xl font-bold mb-6">Редактирование профиля</h2>
@@ -210,7 +210,7 @@ export default {
                 this.user = res.data;
             } catch (error) {
                 console.error(error);
-                this.$router.push('/admin/users');
+                this.$router.push('/backoffice/users');
             }
         },
         async updateUser() {
@@ -257,7 +257,7 @@ export default {
             try {
                 await axios.delete(`/admin/users/${this.user.id}`);
                 alert('Пользователь удалён');
-                this.$router.push('/admin/users');
+                this.$router.push('/backoffice/users');
             } catch (error) {
                 alert('Ошибка удаления');
             }

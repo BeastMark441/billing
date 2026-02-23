@@ -58,11 +58,40 @@ class TBankService
             throw new Exception('TBank Init Failed: ' . $message);
         }
 
+        if (isset($response['PaymentId'])) {
+            $payment->update(['transaction_id' => $response['PaymentId']]);
+        }
+
         Log::info('TBank Init success', [
             'payment_id' => $payment->id,
             'payment_url' => $response['PaymentURL'] ?? null,
         ]);
         return $response['PaymentURL'];
+    }
+
+    /**
+     * Get Payment State
+     */
+    public function getState($paymentId)
+    {
+        if (empty($this->terminalKey) || empty($this->password)) {
+            throw new InvalidArgumentException('Missing TBank configuration');
+        }
+
+        $data = [
+            'TerminalKey' => $this->terminalKey,
+            'PaymentId' => $paymentId,
+        ];
+        
+        $data['Token'] = $this->generateToken($data);
+        
+        $response = Http::post($this->url . '/GetState', $data);
+        
+        if ($response->failed() || !$response['Success']) {
+            throw new Exception('TBank GetState Failed: ' . ($response['Message'] ?? 'Unknown error'));
+        }
+        
+        return $response['Status'];
     }
 
     /**

@@ -48,49 +48,49 @@ const routes = [
         meta: { requiresAuth: true }
     },
     { 
-        path: '/admin', 
+        path: '/backoffice', 
         component: AdminDashboard, 
-        name: 'Admin',
+        name: 'Backoffice',
         meta: { requiresAuth: true, requiresAdmin: true }
     },
     { 
-        path: '/admin/users', 
+        path: '/backoffice/users', 
         component: AdminUsers, 
         name: 'AdminUsers',
         meta: { requiresAuth: true, requiresAdmin: true }
     },
     { 
-        path: '/admin/users/:id', 
+        path: '/backoffice/users/:id', 
         component: AdminUserShow, 
         name: 'AdminUserShow',
         meta: { requiresAuth: true, requiresAdmin: true }
     },
     { 
-        path: '/admin/servers', 
+        path: '/backoffice/servers', 
         component: AdminServers, 
         name: 'AdminServers',
         meta: { requiresAuth: true, requiresAdmin: true }
     },
     { 
-        path: '/admin/tickets', 
+        path: '/backoffice/tickets', 
         component: AdminTickets, 
         name: 'AdminTickets',
         meta: { requiresAuth: true, requiresAdmin: true }
     },
     { 
-        path: '/admin/coupons', 
+        path: '/backoffice/coupons', 
         component: AdminCoupons, 
         name: 'AdminCoupons',
         meta: { requiresAuth: true, requiresAdmin: true }
     },
     { 
-        path: '/admin/trials', 
+        path: '/backoffice/trials', 
         component: AdminTrials, 
         name: 'AdminTrials',
         meta: { requiresAuth: true, requiresAdmin: true }
     },
     { 
-        path: '/admin/categories', 
+        path: '/backoffice/categories', 
         component: AdminCategories, 
         name: 'AdminCategories',
         meta: { requiresAuth: true, requiresAdmin: true }

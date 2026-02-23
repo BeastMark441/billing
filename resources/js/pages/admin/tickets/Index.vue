@@ -2,7 +2,7 @@
     <div class="space-y-8">
         <div class="flex items-center justify-between">
             <h1 class="text-3xl font-bold">Управление тикетами</h1>
-            <router-link to="/admin" class="text-gray-400 hover:text-white text-sm">← Вернуться назад</router-link>
+            <router-link to="/backoffice" class="text-gray-400 hover:text-white text-sm">← Вернуться назад</router-link>
         </div>
         
         <div class="glass-card p-4 rounded-2xl">
@@ -48,7 +48,7 @@
                             <td class="p-4 text-gray-500">#{{ ticket.id }}</td>
                             <td class="p-4 font-bold">{{ ticket.subject }}</td>
                             <td class="p-4">
-                                <router-link :to="`/admin/users/${ticket.user.id}`" class="hover:text-primary">
+                                <router-link :to="`/backoffice/users/${ticket.user.id}`" class="hover:text-primary">
                                     <div>{{ ticket.user.name }}</div>
                                 </router-link>
                                 <div class="text-xs text-gray-500">{{ ticket.user.email }}</div>
@@ -92,7 +92,7 @@
                         <div class="text-gray-400">Тикет #{{ viewingTicket.id }}</div>
                         <div class="text-gray-400">Создан: {{ new Date(viewingTicket.created_at).toLocaleString() }}</div>
                         <div class="text-gray-400">Категория: <b class="text-white">{{ viewingTicket.category || '—' }}</b></div>
-                        <div class="text-gray-400">Клиент: <router-link :to="`/admin/users/${viewingTicket.user.id}`" class="text-primary hover:underline">{{ viewingTicket.user.name }}</router-link></div>
+                        <div class="text-gray-400">Клиент: <router-link :to="`/backoffice/users/${viewingTicket.user.id}`" class="text-primary hover:underline">{{ viewingTicket.user.name }}</router-link></div>
                         <div class="text-gray-400">Приоритет: <b class="text-white uppercase">{{ viewingTicket.priority }}</b></div>
                         <div class="text-gray-400">Статус: <b class="text-white uppercase">{{ viewingTicket.status_v2 || viewingTicket.status }}</b></div>
                     </div>

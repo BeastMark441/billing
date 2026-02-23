@@ -61,11 +61,11 @@
                             to="/dashboard"
                             :class="['px-3 py-2 rounded-lg text-gray-200 hover:text-white transition', $route.path.startsWith('/dashboard') ? 'bg-primary/20 border border-primary/30' : 'bg-primary/10 border border-primary/30']"
                         >Личный кабинет</router-link>
-                        <router-link
+                        <a
                             v-if="isAdmin"
-                            to="/admin"
-                            :class="['px-3 py-2 rounded-lg text-primary hover:text-white hover:bg-white/5 transition border border-transparent hover:border-white/10', $route.path.startsWith('/admin') ? 'text-white bg-white/10 border-white/10' : '']"
-                        >Админ</router-link>
+                            href="/admin"
+                            class="px-3 py-2 rounded-lg text-primary hover:text-white hover:bg-white/5 transition border border-transparent hover:border-white/10"
+                        >Админ</a>
                         <div class="h-6 w-px bg-gray-700 mx-2"></div>
                         <button @click="logout" class="text-red-400 hover:text-red-300 transition flex items-center gap-2">
                             <span>Выйти</span>

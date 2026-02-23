@@ -24,7 +24,7 @@
 
         <!-- Navigation Grid -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <router-link to="/admin/users" class="glass-card p-8 rounded-2xl hover:bg-white/5 transition group">
+            <router-link to="/backoffice/users" class="glass-card p-8 rounded-2xl hover:bg-white/5 transition group">
                 <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-white/20 transition">
                     <span class="sr-only">Пользователи</span>
                     <svg width="24" height="24" viewBox="0 0 24 24" class="text-gray-300"><path fill="currentColor" d="M12 12a5 5 0 1 0-5-5a5 5 0 0 0 5 5m-7 8a7 7 0 1 1 14 0Z"/></svg>
@@ -33,7 +33,7 @@
                 <p class="text-gray-400 text-sm">Управление клиентами, балансами и ролями.</p>
             </router-link>
 
-            <router-link to="/admin/servers" class="glass-card p-8 rounded-2xl hover:bg-white/5 transition group">
+            <router-link to="/backoffice/servers" class="glass-card p-8 rounded-2xl hover:bg-white/5 transition group">
                 <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-white/20 transition">
                     <span class="sr-only">Серверы</span>
                     <svg width="24" height="24" viewBox="0 0 24 24" class="text-gray-300"><path fill="currentColor" d="M4 6h16v4H4zm0 6h16v4H4z"/></svg>
@@ -42,7 +42,7 @@
                 <p class="text-gray-400 text-sm">Мониторинг серверов и управление питанием.</p>
             </router-link>
 
-            <router-link to="/admin/tickets" class="glass-card p-8 rounded-2xl hover:bg-white/5 transition group">
+            <router-link to="/backoffice/tickets" class="glass-card p-8 rounded-2xl hover:bg-white/5 transition group">
                 <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-white/20 transition">
                     <span class="sr-only">Тикеты</span>
                     <svg width="24" height="24" viewBox="0 0 24 24" class="text-gray-300"><path fill="currentColor" d="M3 6h18v12H3z"/></svg>
@@ -51,7 +51,7 @@
                 <p class="text-gray-400 text-sm">Обработка запросов поддержки.</p>
             </router-link>
 
-            <router-link to="/admin/coupons" class="glass-card p-8 rounded-2xl hover:bg-white/5 transition group">
+            <router-link to="/backoffice/coupons" class="glass-card p-8 rounded-2xl hover:bg-white/5 transition group">
                 <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-white/20 transition">
                     <span class="sr-only">Купоны</span>
                     <svg width="24" height="24" viewBox="0 0 24 24" class="text-gray-300"><path fill="currentColor" d="M3 7h18v4h-3v2h3v4H3v-4h3v-2H3z"/></svg>
@@ -60,7 +60,7 @@
                 <p class="text-gray-400 text-sm">Управление промокодами и скидками.</p>
             </router-link>
 
-            <router-link to="/admin/trials" class="glass-card p-8 rounded-2xl hover:bg-white/5 transition group">
+            <router-link to="/backoffice/trials" class="glass-card p-8 rounded-2xl hover:bg-white/5 transition group">
                 <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-white/20 transition">
                     <span class="sr-only">Триалы</span>
                     <svg width="24" height="24" viewBox="0 0 24 24" class="text-gray-300"><path fill="currentColor" d="M5 5h14v14H5z"/></svg>
@@ -69,7 +69,7 @@
                 <p class="text-gray-400 text-sm">Пробные периоды по продуктам.</p>
             </router-link>
 
-            <router-link to="/admin/categories" class="glass-card p-8 rounded-2xl hover:bg-white/5 transition group">
+            <router-link to="/backoffice/categories" class="glass-card p-8 rounded-2xl hover:bg-white/5 transition group">
                 <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-white/20 transition">
                     <span class="sr-only">Категории</span>
                     <svg width="24" height="24" viewBox="0 0 24 24" class="text-gray-300"><path fill="currentColor" d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 7v-7h7v7z"/></svg>

@@ -5,7 +5,7 @@
         <div class="glass-card p-6 rounded-2xl">
             <div class="mb-6 flex items-center justify-between gap-4">
                 <div class="flex items-center gap-4">
-                    <router-link to="/admin" class="text-gray-400 hover:text-white text-sm">← Назад</router-link>
+                    <router-link to="/backoffice" class="text-gray-400 hover:text-white text-sm">← Назад</router-link>
                     <input v-model="search" placeholder="Поиск по email или имени..." class="input-field w-full md:w-96 px-4 py-2 rounded-lg text-white">
                 </div>
                 <button @click="showCreate = true" class="btn-primary px-4 py-2 rounded-lg text-sm shadow-lg">+ Пользователь</button>
@@ -36,7 +36,7 @@
                                 <span v-if="user.is_blocked" class="ml-2 bg-red-500/20 text-red-400 px-2 py-1 rounded text-xs uppercase font-bold">Blocked</span>
                             </td>
                             <td class="p-4">
-                                <router-link :to="'/admin/users/' + user.id" class="text-primary hover:text-white text-sm">Управление</router-link>
+                                <router-link :to="'/backoffice/users/' + user.id" class="text-primary hover:text-white text-sm">Управление</router-link>
                             </td>
                         </tr>
                     </tbody>

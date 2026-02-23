@@ -5,7 +5,7 @@
         <div class="glass-card p-6 rounded-2xl">
             <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div class="flex items-center gap-4">
-                    <router-link to="/admin" class="text-gray-400 hover:text-white text-sm">← Назад</router-link>
+                    <router-link to="/backoffice" class="text-gray-400 hover:text-white text-sm">← Назад</router-link>
                     <input v-model="search" placeholder="Поиск по коду..." class="input-field w-full md:w-80 px-4 py-2 rounded-lg text-white">
                 </div>
                 <button @click="openCreate" class="btn-primary px-4 py-2 rounded-lg text-sm shadow-lg">+ Купон</button>
@@ -154,4 +154,3 @@ export default {
 
 <style scoped>
 </style>
-
