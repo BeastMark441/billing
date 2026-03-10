@@ -2,18 +2,30 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'user_id',
-        'product_id',
-        'amount',
+        'infrastructure_service_id',
         'status',
+        'last_error',
+        'price',
+        'payload',
+        'pterodactyl_server_id',
+        'pterodactyl_server_identifier',
+        'server_ip',
+        'server_port',
+        'paid_at',
+        'expires_at',
+    ];
+
+    protected $casts = [
+        'payload' => 'array',
+        'price' => 'decimal:2',
+        'paid_at' => 'datetime',
+        'expires_at' => 'datetime',
     ];
 
     public function user()
@@ -21,13 +33,8 @@ class Order extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function product()
+    public function service()
     {
-        return $this->belongsTo(Product::class);
-    }
-
-    public function payments()
-    {
-        return $this->hasMany(Payment::class);
+        return $this->belongsTo(InfrastructureService::class, 'infrastructure_service_id');
     }
 }

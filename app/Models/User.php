@@ -4,22 +4,14 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
-use Filament\Models\Contracts\FilamentUser;
-use Filament\Panel;
-use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable, HasRoles;
-
-    public function canAccessPanel(Panel $panel): bool
-    {
-        return ! $this->is_blocked && ($this->role === 'admin' || $this->hasRole('admin'));
-    }
+    use HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -28,19 +20,21 @@ class User extends Authenticatable implements FilamentUser
      */
     protected $fillable = [
         'name',
+        'surname',
+        'patronymic',
         'email',
         'password',
-        // 'balance', // Protected from mass assignment
-        // 'role',    // Protected from mass assignment
-        'ptero_id',
-        'first_name',
-        'last_name',
-        'middle_name',
+        'account_number',
         'phone',
-        'telegram',
-        'vk',
+        'uid',
+        'role_label',
+        'birth_date',
+        'balance',
+        'role',
+        'avatar',
         'is_blocked',
-        'ip_address',
+        'blocked_until',
+        'blocked_reason',
     ];
 
     /**
@@ -63,32 +57,45 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'birth_date' => 'date',
+            'balance' => 'decimal:2',
             'is_blocked' => 'boolean',
+            'blocked_until' => 'datetime',
         ];
     }
 
-    public function servers()
+    public function expenses(): HasMany
     {
-        return $this->hasMany(Server::class);
+        return $this->hasMany(Expense::class);
     }
 
-    public function orders()
-    {
-        return $this->hasMany(Order::class);
-    }
-
-    public function payments()
-    {
-        return $this->hasMany(Payment::class);
-    }
-
-    public function tickets()
+    public function tickets(): HasMany
     {
         return $this->hasMany(Ticket::class);
     }
 
-    public function loginLogs()
+    public function balanceLogs(): HasMany
     {
-        return $this->hasMany(LoginLog::class);
+        return $this->hasMany(BalanceLog::class);
+    }
+
+    public function logs(): HasMany
+    {
+        return $this->hasMany(UserLog::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function getFullNameAttribute()
+    {
+        return trim("{$this->surname} {$this->name} {$this->patronymic}");
     }
 }

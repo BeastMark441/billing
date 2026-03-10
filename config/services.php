@@ -37,18 +37,8 @@ return [
 
     'pterodactyl' => [
         'url' => env('PTERODACTYL_URL'),
-        'key' => env('PTERODACTYL_API_KEY'),
-        'client_key' => env('PTERODACTYL_CLIENT_API_KEY'),
-        'verify' => env('PTERODACTYL_VERIFY_SSL', true),
-        'ca' => env('PTERODACTYL_CACERT_PATH'),
-        'is_pelican' => env('PTERODACTYL_IS_PELICAN', false),
-        'sync_webhook_url' => env('PELICAN_SYNC_WEBHOOK_URL'),
-        'sync_webhook_secret' => env('PELICAN_SYNC_WEBHOOK_SECRET'),
-    ],
-
-    'tbank' => [
-        'terminal_key' => env('TBANK_TERMINAL_KEY'),
-        'password' => env('TBANK_PASSWORD'),
+        'client_key' => env('PTERODACTYL_CLIENT_KEY'),
+        'app_key' => env('PTERODACTYL_APP_KEY'),
     ],
 
 ];

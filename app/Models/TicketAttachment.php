@@ -7,16 +7,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TicketAttachment extends Model
 {
-    protected $fillable = ['ticket_message_id', 'user_id', 'path', 'original_name', 'mime', 'size'];
+    protected $fillable = ['ticket_message_id', 'file_path', 'file_name', 'file_type', 'file_size'];
 
     public function message(): BelongsTo
     {
         return $this->belongsTo(TicketMessage::class, 'ticket_message_id');
     }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
 }
-

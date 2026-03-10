@@ -3,104 +3,209 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\BalanceLog;
+use App\Models\BannedIp;
 use App\Models\User;
+use App\Models\UserLog;
+use App\Notifications\AdminMessage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
     public function index()
     {
-        return User::orderBy('id', 'desc')->get();
+        $users = User::paginate(10);
+
+        return view('admin.users.index', compact('users'));
     }
 
-    public function show(User $user)
+    public function edit(User $user)
     {
-        return $user->load(['servers', 'payments', 'tickets', 'loginLogs']);
-    }
+        $balanceLogs = $user->balanceLogs()->latest()->paginate(5, ['*'], 'balance_page');
+        $logs = $user->logs()->latest()->paginate(20, ['*'], 'logs_page');
+        // Get last known IP from sessions if available
+        $lastIp = DB::table('sessions')->where('user_id', $user->id)->orderBy('last_activity', 'desc')->value('ip_address');
 
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:32',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
-
-        $user = new User();
-        $user->forceFill([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'balance' => 0,
-            'role' => 'user',
-        ]);
-        $user->save();
-
-        return response()->json($user, 201);
+        return view('admin.users.edit', compact('user', 'balanceLogs', 'lastIp', 'logs'));
     }
 
     public function update(Request $request, User $user)
     {
         $validated = $request->validate([
-            'name' => 'string|max:32',
-            'email' => 'email|unique:users,email,' . $user->id,
-            'balance' => 'numeric',
-            'role' => 'in:user,admin',
-            'is_blocked' => 'boolean',
-            'first_name' => 'nullable|string|max:50',
-            'last_name' => 'nullable|string|max:50',
-            'middle_name' => 'nullable|string|max:50',
-            'phone' => 'nullable|string|max:20',
-            'telegram' => 'nullable|string|max:32',
-            'vk' => 'nullable|string|max:50',
+            'surname' => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
+            'patronymic' => ['nullable', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'role' => ['required', 'string', 'in:user,admin'],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'blocked_until' => ['nullable', 'date'],
+            'blocked_reason' => ['nullable', 'string'],
         ]);
 
-        $user->fill($validated);
-        
-        // Manually update protected fields
-        if (isset($validated['balance'])) {
-            $user->forceFill(['balance' => $validated['balance']]);
+        $user->fill([
+            'surname' => $validated['surname'],
+            'name' => $validated['name'],
+            'patronymic' => $validated['patronymic'],
+            'email' => $validated['email'],
+            'role' => $validated['role'],
+            'is_blocked' => $request->has('is_blocked'),
+            'blocked_until' => $validated['blocked_until'],
+            'blocked_reason' => $validated['blocked_reason'],
+        ]);
+
+        if ($request->filled('password')) {
+            $user->password = Hash::make($validated['password']);
         }
-        if (isset($validated['role'])) {
-            $user->forceFill(['role' => $validated['role']]);
+
+        if ($request->hasFile('avatar')) {
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $user->avatar = $path;
         }
-        
+
         $user->save();
-        return $user;
+
+        UserLog::create([
+            'user_id' => $user->id,
+            'action' => 'admin_update',
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'details' => 'Updated by admin '.Auth::user()->name,
+        ]);
+
+        return redirect()->route('admin.users.edit', $user)->with('success', 'User updated successfully.');
+    }
+
+    public function updateBalance(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'amount' => ['required', 'numeric'],
+            'type' => ['required', 'string'],
+            'description' => ['nullable', 'string'],
+        ]);
+
+        $amount = $validated['amount'];
+        $type = $validated['type'];
+
+        // Automatically handle signs based on type
+        if (in_array($type, ['admin_deduction', 'penalty'])) {
+            $amount = -abs($amount);
+        } elseif (in_array($type, ['admin_deposit', 'bonus', 'refund'])) {
+            $amount = abs($amount);
+        }
+        // 'correction' takes amount as is
+
+        $user->balance += $amount;
+        $user->save();
+
+        BalanceLog::create([
+            'user_id' => $user->id,
+            'amount' => $amount,
+            'type' => $type,
+            'description' => $validated['description'],
+            'admin_id' => Auth::id(),
+        ]);
+
+        UserLog::create([
+            'user_id' => $user->id,
+            'action' => 'admin_balance_update',
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'details' => 'Balance changed by '.$amount.' ('.$validated['type'].') by admin '.Auth::user()->name,
+        ]);
+
+        return back()->with('success', 'Balance updated successfully.');
+    }
+
+    public function verifyEmail(User $user)
+    {
+        if ($user->hasVerifiedEmail()) {
+            $user->email_verified_at = null;
+            $message = 'Email unverified.';
+            $action = 'admin_unverify_email';
+        } else {
+            $user->markEmailAsVerified();
+            $message = 'Email verified.';
+            $action = 'admin_verify_email';
+        }
+        $user->save();
+
+        UserLog::create([
+            'user_id' => $user->id,
+            'action' => $action,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'details' => $message.' by admin '.Auth::user()->name,
+        ]);
+
+        return back()->with('success', $message);
+    }
+
+    public function sendVerificationLink(User $user)
+    {
+        if (! $user->hasVerifiedEmail()) {
+            $user->sendEmailVerificationNotification();
+
+            return back()->with('success', 'Verification link sent.');
+        }
+
+        return back()->with('info', 'Email already verified.');
+    }
+
+    public function sendResetLink(User $user)
+    {
+        $status = Password::broker()->sendResetLink(['email' => $user->email]);
+
+        return $status === Password::RESET_LINK_SENT
+                    ? back()->with('success', __($status))
+                    : back()->withErrors(['email' => __($status)]);
     }
 
     public function destroy(User $user)
     {
         $user->delete();
-        return response()->noContent();
+
+        return redirect()->route('admin.users.index')->with('success', 'User deleted successfully.');
     }
 
-    public function block(User $user)
+    public function banIp(Request $request, User $user)
     {
-        $user->update(['is_blocked' => true]);
-        return response()->json(['message' => 'User blocked']);
-    }
+        $ip = $request->input('ip');
+        if (! $ip) {
+            return back()->with('error', 'No IP provided.');
+        }
 
-    public function unblock(User $user)
-    {
-        $user->update(['is_blocked' => false]);
-        return response()->json(['message' => 'User unblocked']);
-    }
-
-    public function verifyEmail(User $user)
-    {
-        $user->markEmailAsVerified();
-        return response()->json(['message' => 'Email verified']);
-    }
-
-    public function resetPassword(Request $request, User $user)
-    {
-        $validated = $request->validate([
-            'password' => 'required|string|min:8|confirmed',
+        BannedIp::create([
+            'ip_address' => $ip,
+            'reason' => 'Banned from user '.$user->email,
         ]);
 
-        $user->update(['password' => Hash::make($validated['password'])]);
-        return response()->json(['message' => 'Password reset successfully']);
+        UserLog::create([
+            'user_id' => $user->id,
+            'action' => 'admin_ban_ip',
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'details' => 'IP '.$ip.' banned by admin '.Auth::user()->name,
+        ]);
+
+        return back()->with('success', 'IP '.$ip.' banned successfully.');
+    }
+
+    public function notifyUser(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'message' => ['required', 'string'],
+            'type' => ['required', 'in:info,warning,danger,success'],
+        ]);
+
+        // Assume we have a notification class or just use database notification directly
+        // I will create AdminMessage notification
+        $user->notify(new AdminMessage($validated['message'], $validated['type']));
+
+        return back()->with('success', 'Notification sent.');
     }
 }

@@ -2,192 +2,302 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
+use App\Models\Order;
+use App\Models\User;
 use Exception;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class PterodactylService
 {
-    protected $url;
-    protected $apiKey;
+    protected $baseUrl;
+
     protected $clientApiKey;
-    protected $verify;
-    protected $caPath;
-    protected $isPelican;
+
+    protected $appApiKey;
 
     public function __construct()
     {
-        $this->url = config('services.pterodactyl.url');
-        $this->apiKey = config('services.pterodactyl.key'); // Application API Key
-        $this->clientApiKey = config('services.pterodactyl.client_key'); // Client API Key (Usually generated for admin)
-        $this->verify = config('services.pterodactyl.verify', true);
-        $this->caPath = config('services.pterodactyl.ca'); // path to cacert.pem if provided
-        $this->isPelican = (bool) (config('services.pterodactyl.is_pelican', false));
+        $this->baseUrl = config('services.pterodactyl.url');
+        $this->clientApiKey = config('services.pterodactyl.client_key');
+        $this->appApiKey = config('services.pterodactyl.app_key');
     }
 
-    protected function client()
+    /**
+     * Provision a server for a paid order
+     */
+    public function provisionServer(Order $order)
     {
-        $verify = $this->caPath ?: $this->verify;
-        return Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->apiKey,
-            'Accept' => 'application/json',
-            'Content-Type' => 'application/json',
-        ])->withOptions([
-            'verify' => $verify
-        ])->baseUrl($this->url);
-    }
+        try {
+            // 1. Check or Create Pterodactyl User
+            $pterodactylUserId = $this->ensureUserExists($order->user);
 
-    // New method for Client API interactions
-    protected function clientApi()
-    {
-        // Note: Ideally, we should use the user's specific API key or an admin client key.
-        // For this MVP, we assume we have a master Client API key in env.
-        $verify = $this->caPath ?: $this->verify;
-        return Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->clientApiKey,
-            'Accept' => 'application/json',
-            'Content-Type' => 'application/json',
-        ])->withOptions([
-            'verify' => $verify
-        ])->baseUrl($this->url);
-    }
+            // 2. Get Service Configuration
+            $service = $order->service;
+            $specs = $service->specifications ?? [];
 
-    public function createUser($data)
-    {
-        // $data: email, username, first_name, last_name
-        $response = $this->client()->post('/api/application/users', $data);
-        if ($response->failed()) {
-            throw new Exception('Pterodactyl User Creation Failed: ' . $response->body());
+            // Validate required specs
+            $this->validateSpecs($specs);
+
+            // 3. Determine Node
+            $nodeId = $this->determineNode($specs);
+
+            // 4. Create Server
+            $serverData = $this->prepareServerData($order, $pterodactylUserId, $nodeId, $specs);
+            $response = $this->createPterodactylServer($serverData);
+
+            // 5. Update Order
+            $attributes = $response['attributes'];
+            $order->update([
+                'status' => 'active',
+                'pterodactyl_server_id' => $attributes['id'],
+                'pterodactyl_server_identifier' => $attributes['identifier'],
+                // IP/Port might not be immediately available or need separate allocation fetch
+                'server_ip' => $this->getAllocationIp($attributes['allocation']),
+                'server_port' => $attributes['allocation']['port'] ?? null,
+            ]);
+
+            return true;
+
+        } catch (Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Pterodactyl Provisioning Error: '.$e->getMessage());
+            $order->update([
+                'status' => 'failed',
+                'last_error' => $e->getMessage()
+            ]);
+            throw $e;
         }
-        return $response->json()['attributes'];
     }
 
-    public function isPelican(): bool
+    public function getEggDetails(int $eggId)
     {
-        return $this->isPelican;
-    }
-
-    public function findUserByEmail(string $email): ?array
-    {
-        $response = $this->client()->get('/api/application/users', [
-            'filter' => ['email' => $email],
-            'include' => '',
-            'per_page' => 1,
-        ]);
-        if ($response->failed()) {
+        // First we need to find the nest for this egg or just search for the egg directly if API supports it
+        // Pterodactyl API structure: /api/application/nests/{nest}/eggs/{egg}
+        // Since we only have egg_id, we might need to search or iterate nests. 
+        // A common trick is to try to get the egg directly if we knew the nest, but we don't.
+        // However, usually we can get all eggs from all nests and find it.
+        
+        // Optimization: Pterodactyl allows getting egg with `include=nest` if we know the endpoint
+        // But standard endpoint is nested. Let's try to find it by iterating nests if needed, 
+        // OR if the user provides nest_id. 
+        // For better UX, let's assume we fetch all nests and their eggs to find the match.
+        
+        $nestsResponse = Http::withToken($this->appApiKey)
+            ->withoutVerifying()
+            ->acceptJson()
+            ->get($this->baseUrl . '/api/application/nests?include=eggs');
+            
+        if (!$nestsResponse->successful()) {
             return null;
         }
-        $data = $response->json()['data'] ?? [];
-        if (count($data) === 0) {
-            return null;
+        
+        foreach ($nestsResponse->json()['data'] as $nest) {
+            if (isset($nest['attributes']['relationships']['eggs']['data'])) {
+                foreach ($nest['attributes']['relationships']['eggs']['data'] as $egg) {
+                    if ($egg['attributes']['id'] == $eggId) {
+                        return [
+                            'docker_image' => $egg['attributes']['docker_image'],
+                            'startup' => $egg['attributes']['startup'],
+                            'nest_id' => $nest['attributes']['id']
+                        ];
+                    }
+                }
+            }
         }
-        return $data[0]['attributes'] ?? null;
+        
+        return null;
     }
 
-    public function createServer($data)
+    protected function ensureUserExists(User $user)
     {
-        if ($this->isPelican && isset($data['nest'])) {
-            unset($data['nest']);
+        if ($user->pterodactyl_id) {
+            // Validate if user really exists in Pterodactyl, if not, clear ID and recreate
+            $response = Http::withToken($this->appApiKey)
+                ->withoutVerifying()
+                ->acceptJson()
+                ->get($this->baseUrl.'/api/application/users/'.$user->pterodactyl_id);
+                
+            if ($response->successful()) {
+                return $user->pterodactyl_id;
+            }
+            
+            // If 404, user was deleted in panel but exists in billing. Clear ID and proceed to create/find.
+            $user->update(['pterodactyl_id' => null]);
         }
-        $response = $this->client()->post('/api/application/servers', $data);
-        if ($response->failed()) {
-            throw new Exception('Pterodactyl Server Creation Failed: ' . $response->body());
+
+        // Search by email first
+        $response = Http::withToken($this->appApiKey)
+            ->withoutVerifying()
+            ->acceptJson()
+            ->get($this->baseUrl.'/api/application/users', [
+                'filter[email]' => $user->email,
+            ]);
+
+        if ($response->successful() && ! empty($response['data'])) {
+            $pterodactylUser = $response['data'][0]['attributes'];
+            $user->update(['pterodactyl_id' => $pterodactylUser['id']]);
+
+            return $pterodactylUser['id'];
         }
-        return $response->json()['attributes'];
+
+        // Create new user
+        $password = Str::random(16);
+        $response = Http::withToken($this->appApiKey)
+            ->withoutVerifying()
+            ->acceptJson()
+            ->post($this->baseUrl.'/api/application/users', [
+                'email' => $user->email,
+                'username' => $this->generateUsername($user->name),
+                'first_name' => explode(' ', $user->name)[0],
+                'last_name' => explode(' ', $user->name)[1] ?? 'User',
+                'password' => $password,
+                'language' => 'en',
+            ]);
+
+        if (! $response->successful()) {
+            throw new Exception('Failed to create Pterodactyl user: '.$response->body());
+        }
+
+        $pterodactylUser = $response['data']['attributes'];
+        $user->update(['pterodactyl_id' => $pterodactylUser['id']]);
+
+        // Notify user about password (implementation pending)
+        // Mail::to($user)->send(new PterodactylAccountCreated($password));
+
+        return $pterodactylUser['id'];
+    }
+
+    protected function generateUsername($name)
+    {
+        $slug = Str::slug($name);
+
+        return substr($slug, 0, 8).Str::random(4);
+    }
+
+    protected function determineNode($specs)
+    {
+        // If user selected a node in payload (not implemented yet), use it
+        // Otherwise, auto-select
+        // For now, simple logic: get all nodes, pick first active one or specific one from specs
+
+        if (isset($specs['node_id'])) {
+            return $specs['node_id'];
+        }
+
+        // Fetch nodes logic here... for now return 1 or throw
+        // Real implementation would check resources
+        return 1;
+    }
+
+    protected function prepareServerData(Order $order, $userId, $nodeId, $specs)
+    {
+        // Auto-fetch Egg Details if missing in specs
+        $eggDetails = $this->getEggDetails((int) ($specs['egg_id'] ?? 1));
+        
+        $dockerImage = $specs['docker_image'] ?? $eggDetails['docker_image'] ?? 'quay.io/pterodactyl/core:java';
+        $startup = $specs['startup'] ?? $eggDetails['startup'] ?? 'java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar {{SERVER_JARFILE}}';
+        $eggId = (int) ($specs['egg_id'] ?? 1);
+        $nestId = (int) ($specs['nest_id'] ?? $eggDetails['nest_id'] ?? 1); // We don't strictly need nest_id for server creation usually, but good to have
+
+        return [
+            'name' => $order->service->name.' #'.$order->id,
+            'user' => (int) $userId,
+            'egg' => $eggId,
+            'docker_image' => $dockerImage,
+            'startup' => $startup,
+            'environment' => $specs['environment'] ?? [
+                'MINECRAFT_VERSION' => 'latest',
+                'SERVER_JARFILE' => 'server.jar',
+                'BUILD_NUMBER' => 'latest',
+            ],
+            'limits' => [
+                'memory' => (int) ($specs['memory'] ?? 1024),
+                'swap' => (int) ($specs['swap'] ?? 0),
+                'disk' => (int) ($specs['disk'] ?? 1024),
+                'io' => (int) ($specs['io'] ?? 500),
+                'cpu' => (int) ($specs['cpu'] ?? 100),
+            ],
+            'feature_limits' => [
+                'databases' => (int) ($specs['databases'] ?? 0),
+                'allocations' => (int) ($specs['allocations'] ?? 0),
+                'backups' => (int) ($specs['backups'] ?? 0),
+            ],
+            // 'allocation' => [
+            //     'default' => 1, // Removed to let Pterodactyl auto-assign
+            // ],
+        ];
+    }
+
+    protected function createPterodactylServer($data)
+    {
+        $response = Http::withToken($this->appApiKey)
+            ->withoutVerifying()
+            ->acceptJson()
+            ->post($this->baseUrl.'/api/application/servers', $data);
+
+        if (! $response->successful()) {
+            throw new Exception('Failed to create server: '.$response->body());
+        }
+
+        return $response->json()['data'];
     }
 
     public function suspendServer($serverId)
     {
-        $response = $this->client()->post("/api/application/servers/{$serverId}/suspend");
-        if ($response->failed()) {
-            throw new Exception('Pterodactyl Server Suspend Failed: ' . $response->body());
+        $response = Http::withToken($this->appApiKey)
+            ->withoutVerifying()
+            ->acceptJson()
+            ->post($this->baseUrl . '/api/application/servers/' . $serverId . '/suspend');
+
+        if (!$response->successful()) {
+            throw new Exception('Failed to suspend server: ' . $response->body());
         }
+
         return true;
     }
 
     public function unsuspendServer($serverId)
     {
-        $response = $this->client()->post("/api/application/servers/{$serverId}/unsuspend");
-        if ($response->failed()) {
-            throw new Exception('Pterodactyl Server Unsuspend Failed: ' . $response->body());
+        $response = Http::withToken($this->appApiKey)
+            ->withoutVerifying()
+            ->acceptJson()
+            ->post($this->baseUrl . '/api/application/servers/' . $serverId . '/unsuspend');
+
+        if (!$response->successful()) {
+            throw new Exception('Failed to unsuspend server: ' . $response->body());
         }
+
         return true;
     }
 
     public function deleteServer($serverId)
     {
-        $response = $this->client()->delete("/api/application/servers/{$serverId}");
-        if ($response->failed()) {
-            throw new Exception('Pterodactyl Server Deletion Failed: ' . $response->body());
+        $response = Http::withToken($this->appApiKey)
+            ->withoutVerifying()
+            ->acceptJson()
+            ->delete($this->baseUrl . '/api/application/servers/' . $serverId);
+
+        if (!$response->successful()) {
+            throw new Exception('Failed to delete server: ' . $response->body());
         }
+
         return true;
     }
-    
-    public function updateServerBuild($serverId, array $limits, array $featureLimits = [])
+
+    protected function validateSpecs($specs)
     {
-        $payload = [
-            'limits' => $limits,
-            'feature_limits' => $featureLimits,
-        ];
-        $response = $this->client()->patch("/api/application/servers/{$serverId}/build", $payload);
-        if ($response->failed()) {
-            throw new Exception('Pterodactyl Server Build Update Failed: ' . $response->body());
+        $required = ['egg_id', 'memory', 'disk', 'cpu'];
+        foreach ($required as $field) {
+            if (! isset($specs[$field])) {
+                throw new Exception("Missing required specification: {$field}");
+            }
         }
-        return true;
-    }
-    
-    public function getNodes()
-    {
-        $response = $this->client()->get('/api/application/nodes');
-        if ($response->failed()) {
-             throw new Exception('Pterodactyl Nodes Fetch Failed: ' . $response->body());
-        }
-        return $response->json()['data'];
     }
 
-    public function getAllocations($nodeId)
+    protected function getAllocationIp($allocation)
     {
-        $response = $this->client()->get("/api/application/nodes/{$nodeId}/allocations");
-         if ($response->failed()) {
-             throw new Exception('Pterodactyl Allocations Fetch Failed: ' . $response->body());
-        }
-        return $response->json()['data'];
-    }
-
-    // --- Client API Methods for Stats/Power ---
-
-    public function getServerResources($pteroIdentifier)
-    {
-        // Requires Client API Key
-        $response = $this->clientApi()->get("/api/client/servers/{$pteroIdentifier}/resources");
-        if ($response->failed()) {
-            // It might fail if server is installing/suspended
-            return null; 
-        }
-        return $response->json()['attributes'];
-    }
-
-    public function sendPowerAction($pteroIdentifier, $signal)
-    {
-        // signal: start, stop, restart, kill
-        $response = $this->clientApi()->post("/api/client/servers/{$pteroIdentifier}/power", [
-            'signal' => $signal
-        ]);
-        
-        if ($response->failed()) {
-            throw new Exception('Power Action Failed: ' . $response->body());
-        }
-        return true;
-    }
-    
-    public function getServerDetails($serverId)
-    {
-         // Get Application Server Details to find identifier if needed, or use existing ptero_server_id
-         // But for Client API we need the "identifier" (short UUID), not the numeric ID.
-         // We should probably store "identifier" in our DB or fetch it.
-         $response = $this->client()->get("/api/application/servers/{$serverId}");
-         if ($response->failed()) {
-             throw new Exception('Server Fetch Failed: ' . $response->body());
-         }
-         return $response->json()['attributes'];
+        // Allocation structure from API usually has 'ip' and 'port' or 'alias'
+        // Just a helper to extract IP
+        return $allocation['ip'] ?? '0.0.0.0';
     }
 }

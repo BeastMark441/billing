@@ -3,20 +3,26 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class TicketMessage extends Model
 {
-    use SoftDeletes;
+    protected $fillable = ['ticket_id', 'user_id', 'message'];
 
-    protected $fillable = ['ticket_id', 'user_id', 'message', 'edited_at', 'edited_by', 'is_internal'];
+    protected static function boot()
+    {
+        parent::boot();
 
-    protected $casts = [
-        'edited_at' => 'datetime',
-        'is_internal' => 'boolean',
-    ];
+        static::deleting(function ($message) {
+            foreach ($message->attachments as $attachment) {
+                if (Storage::disk('public')->exists($attachment->file_path)) {
+                    Storage::disk('public')->delete($attachment->file_path);
+                }
+            }
+        });
+    }
 
     public function ticket(): BelongsTo
     {
@@ -28,18 +34,8 @@ class TicketMessage extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function editor(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'edited_by');
-    }
-
-    public function edits(): HasMany
-    {
-        return $this->hasMany(TicketMessageEdit::class);
-    }
-
     public function attachments(): HasMany
     {
-        return $this->hasMany(TicketAttachment::class, 'ticket_message_id');
+        return $this->hasMany(TicketAttachment::class);
     }
 }
