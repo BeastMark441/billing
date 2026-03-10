@@ -131,6 +131,52 @@
 
         <!-- Sidebar Info -->
         <div class="space-y-6">
+            <!-- Actions -->
+            <div class="bg-[#0f0f13] border border-white/5 rounded-2xl p-6">
+                <h3 class="text-lg font-bold text-white mb-4">Управление</h3>
+                <div class="space-y-3">
+                    <!-- Auto Renewal Toggle -->
+                    <form method="POST" action="{{ route('orders.auto-renewal', $order) }}" class="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5">
+                        @csrf
+                        <div class="text-sm font-medium text-white">Автопродление</div>
+                        <button type="submit" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0f0f13] {{ $order->auto_renewal ? 'bg-blue-600' : 'bg-gray-700' }}">
+                            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition {{ $order->auto_renewal ? 'translate-x-6' : 'translate-x-1' }}"></span>
+                        </button>
+                    </form>
+
+                    <!-- Manual Renew Button (Only if suspended or active) -->
+                    @if($order->status === 'suspended' || $order->status === 'active')
+                    <button type="button" onclick="document.getElementById('renewModal').classList.remove('hidden')" class="w-full text-center px-4 py-3 {{ $order->status === 'suspended' ? 'bg-green-600 hover:bg-green-700 text-white font-bold' : 'bg-white/5 hover:bg-white/10 text-white font-medium border border-white/10' }} rounded-lg transition-colors flex items-center justify-center gap-2">
+                        @if($order->status === 'suspended')
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Возобновить работу
+                        @else
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Продлить вручную
+                        @endif
+                    </button>
+                    @endif
+
+                    <!-- Create Ticket -->
+                    <a href="{{ route('dashboard.tickets.create', ['order_id' => $order->id]) }}" class="block w-full text-center px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        Создать тикет
+                    </a>
+
+                    <!-- Request Cancellation -->
+                    <a href="{{ route('dashboard.tickets.create', ['order_id' => $order->id, 'subject' => 'Отмена/Возврат заказа #' . $order->id]) }}" class="block w-full text-center px-4 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        Запросить отмену
+                    </a>
+                    
+                    <!-- Change Plan -->
+                    <a href="{{ route('dashboard.tickets.create', ['order_id' => $order->id, 'subject' => 'Смена тарифа для заказа #' . $order->id]) }}" class="block w-full text-center px-4 py-3 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        Смена тарифа
+                    </a>
+                </div>
+            </div>
+
             <!-- Payment Info -->
             <div class="bg-[#0f0f13] border border-white/5 rounded-2xl p-6">
                 <h3 class="text-lg font-bold text-white mb-4">Детали оплаты</h3>
@@ -169,25 +215,64 @@
                 @endif
             </div>
 
-            <!-- History/Logs (Placeholder) -->
+            <!-- Status History -->
             <div class="bg-[#0f0f13] border border-white/5 rounded-2xl p-6">
-                <h3 class="text-lg font-bold text-white mb-4">История</h3>
-                <div class="space-y-4">
-                    <div class="flex gap-3">
-                        <div class="w-2 h-2 rounded-full bg-green-500 mt-2"></div>
-                        <div>
-                            <div class="text-sm text-white">Статус изменен на <span class="text-green-400">{{ $order->status }}</span></div>
-                            <div class="text-xs text-gray-500">{{ $order->updated_at->diffForHumans() }}</div>
+                <h3 class="text-lg font-bold text-white mb-4">История статусов</h3>
+                <div class="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-white/10 before:to-transparent max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                    @foreach($order->statusHistory as $history)
+                    <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                        <div class="flex items-center justify-center w-10 h-10 rounded-full border border-white/10 bg-[#0f0f13] shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                            @if($history->status_to === 'active')
+                                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                            @elseif($history->status_to === 'failed')
+                                <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                            @elseif($history->status_to === 'suspended')
+                                <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                            @else
+                                <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                            @endif
+                        </div>
+                        <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-white/5 bg-white/[0.02]">
+                            <div class="flex items-center justify-between space-x-2 mb-1">
+                                <div class="font-bold text-white text-sm">
+                                    {{ ucfirst($history->status_to) }}
+                                </div>
+                                <time class="font-mono text-xs text-gray-500">{{ $history->created_at->format('d.m.Y H:i') }}</time>
+                            </div>
+                            @if($history->comment)
+                            <div class="text-xs text-gray-400">
+                                {{ $history->comment }}
+                            </div>
+                            @endif
                         </div>
                     </div>
-                    <div class="flex gap-3">
-                        <div class="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
-                        <div>
-                            <div class="text-sm text-white">Заказ создан</div>
-                            <div class="text-xs text-gray-500">{{ $order->created_at->diffForHumans() }}</div>
-                        </div>
-                    </div>
+                    @endforeach
                 </div>
+            </div>
+        </div>
+    </div>
+    <!-- Renew Confirmation Modal -->
+    <div id="renewModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-[#1a1a20] rounded-2xl max-w-md w-full p-6 border border-white/10">
+            <h3 class="text-xl font-bold text-white mb-4">Подтверждение продления</h3>
+            <p class="text-gray-400 text-sm mb-6">
+                Вы собираетесь продлить услугу <strong>{{ $order->service->name }}</strong> на 30 дней.
+                <br><br>
+                Стоимость: <span class="text-white font-bold">{{ number_format($order->price, 2) }} ₽</span>
+                <br>
+                Ваш баланс: <span class="text-white font-bold">{{ number_format(Auth::user()->balance, 2) }} ₽</span>
+            </p>
+            
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('renewModal').classList.add('hidden')" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
+                    Отмена
+                </button>
+                <form method="POST" action="{{ route('orders.renew', $order) }}">
+                    @csrf
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                        Подтвердить и оплатить
+                    </button>
+                </form>
             </div>
         </div>
     </div>

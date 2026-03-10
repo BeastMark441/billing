@@ -19,6 +19,7 @@ class Order extends Model
         'server_port',
         'paid_at',
         'expires_at',
+        'auto_renewal',
     ];
 
     protected $casts = [
@@ -26,6 +27,7 @@ class Order extends Model
         'price' => 'decimal:2',
         'paid_at' => 'datetime',
         'expires_at' => 'datetime',
+        'auto_renewal' => 'boolean',
     ];
 
     public function user()
@@ -36,5 +38,32 @@ class Order extends Model
     public function service()
     {
         return $this->belongsTo(InfrastructureService::class, 'infrastructure_service_id');
+    }
+
+    public function statusHistory()
+    {
+        return $this->hasMany(OrderStatusHistory::class)->latest();
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::updated(function ($order) {
+            if ($order->isDirty('status')) {
+                $order->statusHistory()->create([
+                    'status_from' => $order->getOriginal('status'),
+                    'status_to' => $order->status,
+                ]);
+            }
+        });
+
+        static::created(function ($order) {
+            $order->statusHistory()->create([
+                'status_from' => null,
+                'status_to' => $order->status,
+                'comment' => 'Заказ создан',
+            ]);
+        });
     }
 }

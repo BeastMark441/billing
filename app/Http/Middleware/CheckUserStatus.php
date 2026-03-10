@@ -30,6 +30,7 @@ class CheckUserStatus
         }
 
         if (Auth::check()) {
+            /** @var \App\Models\User $user */
             $user = Auth::user();
             if ($user->is_blocked) {
                 // Check blocked_until

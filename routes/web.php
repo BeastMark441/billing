@@ -56,6 +56,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('orders', \App\Http\Controllers\OrderController::class)->only(['index', 'show']);
     Route::get('/infrastructure/services/{service}/order', [\App\Http\Controllers\OrderController::class, 'create'])->name('orders.create');
     Route::post('/infrastructure/services/{service}/order', [\App\Http\Controllers\OrderController::class, 'store'])->name('orders.store');
+    Route::post('/orders/{order}/auto-renewal', [\App\Http\Controllers\OrderController::class, 'toggleAutoRenewal'])->name('orders.auto-renewal');
+    Route::post('/orders/{order}/renew', [\App\Http\Controllers\OrderController::class, 'renew'])->name('orders.renew');
 });
 
 Route::middleware('auth')->group(function () {
@@ -119,6 +121,9 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
         'update' => 'orders.update',
         'destroy' => 'orders.destroy',
     ])->only(['index', 'show', 'update', 'destroy']);
+    
+    Route::post('orders/{order}/change-plan', [\App\Http\Controllers\Admin\OrderController::class, 'changePlan'])->name('orders.change-plan');
+    Route::post('orders/{order}/refund', [\App\Http\Controllers\Admin\OrderController::class, 'refund'])->name('orders.refund');
 });
 
 require __DIR__.'/auth.php';

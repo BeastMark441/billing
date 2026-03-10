@@ -10,6 +10,7 @@ class BillingController extends Controller
 {
     public function index(Request $request)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         $query = $user->balanceLogs()->orderBy('created_at', 'desc');

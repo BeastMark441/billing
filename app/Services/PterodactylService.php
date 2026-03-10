@@ -48,13 +48,23 @@ class PterodactylService
 
             // 5. Update Order
             $attributes = $response['attributes'];
+            
+            // Extract Allocation from Relationships
+            // Usually in attributes.relationships.allocations.data[0].attributes
+            $allocation = null;
+            if (isset($attributes['relationships']['allocations']['data'][0]['attributes'])) {
+                $allocation = $attributes['relationships']['allocations']['data'][0]['attributes'];
+            } elseif (isset($attributes['allocation'])) {
+                // Fallback if structure is different
+                $allocation = $attributes['allocation'];
+            }
+
             $order->update([
                 'status' => 'active',
                 'pterodactyl_server_id' => $attributes['id'],
                 'pterodactyl_server_identifier' => $attributes['identifier'],
-                // IP/Port might not be immediately available or need separate allocation fetch
-                'server_ip' => $this->getAllocationIp($attributes['allocation']),
-                'server_port' => $attributes['allocation']['port'] ?? null,
+                'server_ip' => $allocation ? ($allocation['ip_alias'] ?? $allocation['ip']) : '0.0.0.0',
+                'server_port' => $allocation ? $allocation['port'] : null,
             ]);
 
             return true;
@@ -158,13 +168,13 @@ class PterodactylService
             throw new Exception('Failed to create Pterodactyl user: '.$response->body());
         }
 
-        $pterodactylUser = $response['data']['attributes'];
-        $user->update(['pterodactyl_id' => $pterodactylUser['id']]);
+        $pterodactylUser = $response->json();
+        $user->update(['pterodactyl_id' => $pterodactylUser['attributes']['id']]);
 
         // Notify user about password (implementation pending)
         // Mail::to($user)->send(new PterodactylAccountCreated($password));
 
-        return $pterodactylUser['id'];
+        return $pterodactylUser['attributes']['id'];
     }
 
     protected function generateUsername($name)
@@ -222,10 +232,47 @@ class PterodactylService
                 'allocations' => (int) ($specs['allocations'] ?? 0),
                 'backups' => (int) ($specs['backups'] ?? 0),
             ],
-            // 'allocation' => [
-            //     'default' => 1, // Removed to let Pterodactyl auto-assign
-            // ],
+            'allocation' => [
+                'default' => $this->findFreeAllocation($nodeId),
+            ],
         ];
+    }
+
+    protected function findFreeAllocation($nodeId)
+    {
+        // Try to find a free allocation on the specified node
+        // Pterodactyl API: /api/application/nodes/{node}/allocations
+        // We need to iterate pages to find one where 'assigned' is false
+        
+        $page = 1;
+        while ($page <= 5) { // Limit pages to prevent infinite loops
+            $response = Http::withToken($this->appApiKey)
+                ->withoutVerifying()
+                ->acceptJson()
+                ->get($this->baseUrl . "/api/application/nodes/{$nodeId}/allocations?page={$page}");
+                
+            if (!$response->successful()) {
+                // If we can't fetch allocations, maybe fallback or throw? 
+                // Let's assume we can't find one and throw exception
+                throw new Exception('Failed to fetch allocations from node ' . $nodeId);
+            }
+            
+            $data = $response->json();
+            
+            foreach ($data['data'] as $allocation) {
+                if (!$allocation['attributes']['assigned']) {
+                    return $allocation['attributes']['id'];
+                }
+            }
+            
+            if ($data['meta']['pagination']['current_page'] >= $data['meta']['pagination']['total_pages']) {
+                break;
+            }
+            
+            $page++;
+        }
+        
+        throw new Exception('No free allocations found on node ' . $nodeId);
     }
 
     protected function createPterodactylServer($data)
@@ -239,7 +286,21 @@ class PterodactylService
             throw new Exception('Failed to create server: '.$response->body());
         }
 
-        return $response->json()['data'];
+        return $response->json();
+    }
+
+    public function getServerDetails($serverId)
+    {
+        $response = Http::withToken($this->appApiKey)
+            ->withoutVerifying()
+            ->acceptJson()
+            ->get($this->baseUrl . '/api/application/servers/' . $serverId);
+
+        if (!$response->successful()) {
+            return null;
+        }
+
+        return $response->json()['attributes'];
     }
 
     public function suspendServer($serverId)

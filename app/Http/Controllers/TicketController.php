@@ -11,20 +11,25 @@ class TicketController extends Controller
 {
     public function index()
     {
-        $tickets = Auth::user()->tickets()->latest()->paginate(10);
-
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $tickets = $user->tickets()->latest()->paginate(10);
         return view('dashboard.tickets.index', compact('tickets'));
     }
 
     public function create()
     {
-        $orders = Auth::user()->orders()->whereIn('status', ['active', 'suspended', 'failed'])->get();
-
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $orders = $user->orders()->whereIn('status', ['active', 'suspended', 'failed'])->get();
         return view('dashboard.tickets.create', compact('orders'));
     }
 
     public function store(Request $request)
     {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
         $validated = $request->validate([
             'subject' => 'required|string|max:255',
             'order_id' => 'nullable|exists:orders,id',
@@ -34,14 +39,14 @@ class TicketController extends Controller
         ]);
 
         // Verify order belongs to user if provided
-        if (! empty($validated['order_id'])) {
-            $hasOrder = Auth::user()->orders()->where('id', $validated['order_id'])->exists();
-            if (! $hasOrder) {
+        if (!empty($validated['order_id'])) {
+            $hasOrder = $user->orders()->where('id', $validated['order_id'])->exists();
+            if (!$hasOrder) {
                 return back()->withErrors(['order_id' => 'Выбранный заказ не найден.']);
             }
         }
 
-        $ticket = Auth::user()->tickets()->create([
+        $ticket = $user->tickets()->create([
             'subject' => $validated['subject'],
             'order_id' => $validated['order_id'] ?? null,
             'message' => $validated['message'], // Initial message content for quick preview
@@ -51,7 +56,7 @@ class TicketController extends Controller
 
         // Create initial message entry
         $message = $ticket->messages()->create([
-            'user_id' => Auth::id(),
+            'user_id' => $user->id,
             'message' => $validated['message'],
         ]);
 

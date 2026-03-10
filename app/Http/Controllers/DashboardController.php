@@ -22,6 +22,7 @@ class DashboardController extends Controller
      */
     public function security()
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         $logs = $user->logs()
             ->where('action', 'not like', 'admin_%')
@@ -40,7 +41,9 @@ class DashboardController extends Controller
      */
     public function logs()
     {
-        $logs = Auth::user()->logs()
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $logs = $user->logs()
             ->where('action', 'not like', 'admin_%')
             ->latest()
             ->paginate(20);
@@ -53,8 +56,9 @@ class DashboardController extends Controller
      */
     public function infrastructure()
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
-
+        
         $categories = InfrastructureCategory::where('is_active', true)
             ->with(['subcategories' => function ($query) {
                 $query->where('is_active', true)
@@ -85,7 +89,9 @@ class DashboardController extends Controller
      */
     public function markNotificationAsRead($id)
     {
-        $notification = Auth::user()->notifications()->find($id);
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $notification = $user->notifications()->find($id);
         if ($notification) {
             $notification->markAsRead();
         }

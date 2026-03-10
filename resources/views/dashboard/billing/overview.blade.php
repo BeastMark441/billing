@@ -86,6 +86,8 @@
                                             'correction' => 'bg-yellow-500/10 text-yellow-500',
                                             'penalty' => 'bg-red-500/10 text-red-500',
                                             'expense' => 'bg-gray-500/10 text-gray-400',
+                                            'renewal' => 'bg-blue-500/10 text-blue-400',
+                                            'purchase' => 'bg-green-500/10 text-green-500',
                                         ];
                                         $typeLabels = [
                                             'admin_deposit' => 'Пополнение',
@@ -94,6 +96,8 @@
                                             'correction' => 'Корректировка',
                                             'penalty' => 'Штраф',
                                             'expense' => 'Списание',
+                                            'renewal' => 'Продление',
+                                            'purchase' => 'Покупка',
                                         ];
                                         $colorClass = $typeColors[$transaction->type] ?? 'bg-gray-500/10 text-gray-400';
                                         $label = $typeLabels[$transaction->type] ?? ucfirst($transaction->type);

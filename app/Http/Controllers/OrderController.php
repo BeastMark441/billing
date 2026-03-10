@@ -20,7 +20,9 @@ class OrderController extends Controller
 
     public function index()
     {
-        $orders = Auth::user()->orders()->with('service')->latest()->paginate(10);
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $orders = $user->orders()->with('service')->latest()->paginate(10);
 
         return view('dashboard.orders.index', compact('orders'));
     }
@@ -78,6 +80,66 @@ class OrderController extends Controller
             return redirect()->route('orders.show', $order)->with('success', 'Заказ успешно создан и сервер установлен!');
         } catch (Exception $e) {
             return redirect()->route('orders.show', $order)->with('error', 'Заказ создан, но возникла ошибка при установке сервера: '.$e->getMessage());
+        }
+    }
+
+    public function toggleAutoRenewal(Order $order)
+    {
+        if ($order->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $order->update(['auto_renewal' => !$order->auto_renewal]);
+
+        return back()->with('success', 'Настройка автопродления обновлена.');
+    }
+
+    public function renew(Order $order)
+    {
+        if ($order->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        if ($order->status !== 'suspended' && $order->status !== 'active') {
+             return back()->with('error', 'Этот заказ нельзя продлить вручную.');
+        }
+
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $cost = $order->price;
+
+        if ($user->balance < $cost) {
+            return back()->with('error', 'Недостаточно средств на балансе.');
+        }
+
+        try {
+            $user->decrement('balance', $cost);
+            
+            // Log transaction
+            $user->balanceLogs()->create([
+                'amount' => -$cost,
+                'type' => 'renewal',
+                'description' => "Ручное продление заказа #{$order->id}",
+            ]);
+
+            // Extend expiration
+            $newExpiration = $order->expires_at && $order->expires_at->isFuture() 
+                ? $order->expires_at->copy()->addMonth() 
+                : \Carbon\Carbon::now()->addMonth();
+
+            $order->update(['expires_at' => $newExpiration]);
+
+            // Unsuspend if needed
+            if ($order->status === 'suspended') {
+                if ($order->pterodactyl_server_id) {
+                    $this->pterodactylService->unsuspendServer($order->pterodactyl_server_id);
+                }
+                $order->update(['status' => 'active']);
+            }
+
+            return back()->with('success', 'Услуга успешно продлена до ' . $newExpiration->format('d.m.Y'));
+        } catch (Exception $e) {
+            return back()->with('error', 'Ошибка продления: ' . $e->getMessage());
         }
     }
 }

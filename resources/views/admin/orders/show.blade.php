@@ -116,6 +116,22 @@
 
         <!-- Danger Zone -->
         <div class="space-y-6">
+            <!-- Order Actions -->
+            <div class="bg-[#0f0f13] border border-white/5 rounded-2xl p-6">
+                <h3 class="text-lg font-bold text-white mb-4">Действия</h3>
+                <div class="space-y-3">
+                    <!-- Change Plan Button -->
+                    <button type="button" onclick="document.getElementById('changePlanModal').classList.remove('hidden')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition-colors text-sm">
+                        Сменить тариф
+                    </button>
+
+                    <!-- Refund Button -->
+                    <button type="button" onclick="document.getElementById('refundModal').classList.remove('hidden')" class="w-full bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 border border-yellow-500/20 font-bold py-2 rounded-lg transition-colors text-sm">
+                        Оформить возврат
+                    </button>
+                </div>
+            </div>
+
             <div class="bg-[#0f0f13] border border-red-500/20 rounded-2xl p-6">
                 <h3 class="text-lg font-bold text-red-400 mb-4">Опасная зона</h3>
                 <p class="text-gray-400 text-xs mb-4">Удаление заказа также попытается удалить сервер в панели Pterodactyl. Это действие необратимо.</p>
@@ -128,6 +144,91 @@
                     </button>
                 </form>
             </div>
+        </div>
+    </div>
+
+    <!-- Change Plan Modal -->
+    <div id="changePlanModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-[#1a1a20] rounded-2xl max-w-md w-full p-6 border border-white/10">
+            <h3 class="text-xl font-bold text-white mb-4">Смена тарифа</h3>
+            <p class="text-gray-400 text-sm mb-6">Выберите новый тариф. Обратите внимание, что ресурсы сервера в Pterodactyl будут обновлены автоматически.</p>
+            
+            <form method="POST" action="{{ route('admin.orders.change-plan', $order) }}">
+                @csrf
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Новый тариф</label>
+                    <select name="service_id" class="w-full bg-[#0a0a0f] border border-white/10 rounded-lg px-4 py-2 text-white">
+                        @foreach(\App\Models\InfrastructureService::where('is_active', true)->get() as $service)
+                            <option value="{{ $service->id }}" {{ $order->service_id == $service->id ? 'selected' : '' }}>
+                                {{ $service->name }} ({{ number_format($service->price, 0) }} ₽)
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="document.getElementById('changePlanModal').classList.add('hidden')" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
+                        Отмена
+                    </button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                        Применить
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Refund Modal -->
+    <div id="refundModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-[#1a1a20] rounded-2xl max-w-md w-full p-6 border border-white/10">
+            <h3 class="text-xl font-bold text-white mb-4">Оформление возврата</h3>
+            
+            @php
+                $daysRemaining = $order->expires_at && $order->expires_at->isFuture() ? floor(now()->diffInDays($order->expires_at)) : 0;
+                $dailyPrice = $order->price / 30; // Approx
+                $refundAmount = round($daysRemaining * $dailyPrice, 2);
+            @endphp
+            
+            <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6">
+                <div class="flex justify-between mb-2">
+                    <span class="text-gray-400 text-sm">Дней осталось:</span>
+                    <span class="text-white font-mono">{{ $daysRemaining }}</span>
+                </div>
+                <div class="flex justify-between mb-2">
+                    <span class="text-gray-400 text-sm">Стоимость в день:</span>
+                    <span class="text-white font-mono">~{{ number_format($dailyPrice, 2) }} ₽</span>
+                </div>
+                <div class="border-t border-blue-500/20 my-2 pt-2 flex justify-between">
+                    <span class="text-blue-300 font-bold">Рекомендуемый возврат:</span>
+                    <span class="text-blue-300 font-bold font-mono">{{ number_format($refundAmount, 2) }} ₽</span>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ route('admin.orders.refund', $order) }}">
+                @csrf
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Сумма возврата (₽)</label>
+                    <input type="number" name="amount" value="{{ $refundAmount }}" step="0.01" min="0" class="w-full bg-[#0a0a0f] border border-white/10 rounded-lg px-4 py-2 text-white">
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Тип возврата</label>
+                    <select name="type" class="w-full bg-[#0a0a0f] border border-white/10 rounded-lg px-4 py-2 text-white">
+                        <option value="balance">На баланс аккаунта</option>
+                        <option value="external">На карту (T-Bank/Внешний)</option>
+                    </select>
+                </div>
+                
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="document.getElementById('refundModal').classList.add('hidden')" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
+                        Отмена
+                    </button>
+                    <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded-lg transition-colors">
+                        Подтвердить возврат
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </x-admin-layout>
