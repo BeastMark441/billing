@@ -35,31 +35,39 @@ class TBankService
             'SuccessURL' => route('payments.success'),
             'FailURL' => route('payments.failed'),
             'NotificationURL' => route('payments.webhook'),
-            'DATA' => [
-                'Email' => $payment->user->email,
-            ],
-            'Receipt' => [
-                'Email' => $payment->user->email,
-                'Taxation' => 'osn', // Simplified taxation system or OSN
-                'Items' => [
-                    [
-                        'Name' => 'Пополнение баланса',
-                        'Price' => $amountKopecks,
-                        'Quantity' => 1,
-                        'Amount' => $amountKopecks,
-                        'Tax' => 'none', // No VAT
-                    ]
+        ];
+
+        // Add Receipt only if taxation system is set (optional for simple transfers but required for fiscalization)
+        // For testing/demo we might skip it or include minimal data.
+        // Important: DATA and Receipt should be encoded in JSON if passed, BUT T-Bank API expects them as nested arrays in JSON body request.
+        // However, for Token generation, they are excluded.
+        
+        $receipt = [
+            'Email' => $payment->user->email,
+            'Taxation' => 'osn', 
+            'Items' => [
+                [
+                    'Name' => 'Пополнение баланса',
+                    'Price' => $amountKopecks,
+                    'Quantity' => 1,
+                    'Amount' => $amountKopecks,
+                    'Tax' => 'none',
                 ]
             ]
         ];
+        
+        $params['Receipt'] = $receipt;
+        $params['DATA'] = ['Email' => $payment->user->email];
 
+        // Generate token (without Receipt and DATA)
         $params['Token'] = $this->generateToken($params);
 
-        $response = Http::post($this->baseUrl . 'Init', $params);
+        // Send JSON request
+        $response = Http::asJson()->post($this->baseUrl . 'Init', $params);
 
         if (!$response->successful() || !$response->json('Success')) {
             Log::error('TBank Init Error', ['response' => $response->json(), 'payment_id' => $payment->id]);
-            throw new \Exception('Ошибка инициализации платежа: ' . ($response->json('Message') ?? 'Unknown error'));
+            throw new \Exception('Ошибка инициализации платежа: ' . ($response->json('Message') ?? 'Unknown error') . ' (' . ($response->json('Details') ?? '') . ')');
         }
 
         $data = $response->json();
@@ -67,7 +75,7 @@ class TBankService
         $payment->update([
             'payment_id' => $data['PaymentId'],
             'payment_url' => $data['PaymentURL'],
-            'status' => 'pending', // Waiting for user to pay
+            'status' => 'pending', 
             'payload' => array_merge($payment->payload ?? [], ['init_response' => $data]),
         ]);
 

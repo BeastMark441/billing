@@ -22,7 +22,7 @@
                     <div class="bg-[#050508] border {{ $message->user->role === 'admin' ? 'border-[#a6cb40]/20 bg-[#a6cb40]/5' : 'border-white/10' }} rounded-xl p-6 group">
                         <div class="flex items-start gap-4">
                             <div class="w-10 h-10 rounded-full {{ $message->user->role === 'admin' ? 'bg-[#a6cb40] text-[#0a0a0f]' : 'bg-white/10 text-white' }} flex items-center justify-center font-bold flex-shrink-0">
-                                {{ substr($message->user->name, 0, 1) }}
+                                {{ mb_strtoupper(mb_substr($message->user->name, 0, 1)) }}
                             </div>
                             <div class="flex-1">
                                 <div class="flex items-center justify-between mb-2">

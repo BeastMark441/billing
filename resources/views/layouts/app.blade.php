@@ -193,22 +193,6 @@
                 </div>
 
                 <main class="flex-1 p-6 md:p-8">
-                    @if(auth()->check() && auth()->user()->unreadNotifications->count() > 0)
-                        <div class="mb-6 space-y-4">
-                            @foreach(auth()->user()->unreadNotifications as $notification)
-                                <div class="p-4 rounded-lg border flex items-start justify-between gap-4 {{ isset($notification->data['type']) && $notification->data['type'] === 'danger' ? 'bg-red-500/10 border-red-500/20 text-red-500' : (isset($notification->data['type']) && $notification->data['type'] === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-500' : (isset($notification->data['type']) && $notification->data['type'] === 'warning' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500' : 'bg-blue-500/10 border-blue-500/20 text-blue-500')) }}">
-                                    <div>
-                                        <div class="font-medium">{{ $notification->data['message'] ?? 'Notification' }}</div>
-                                        <div class="text-xs opacity-70 mt-1">{{ $notification->created_at->diffForHumans() }}</div>
-                                    </div>
-                                    <a href="{{ route('notifications.read', $notification->id) }}" class="text-sm underline whitespace-nowrap hover:opacity-80">
-                                        Прочитано
-                                    </a>
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
-                    
                     {{ $slot }}
                 </main>
             </div>

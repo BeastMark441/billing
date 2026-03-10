@@ -29,7 +29,7 @@
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-3">
                                 <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white text-xs font-bold overflow-hidden">
-                                    {{ substr($ticket->user->name, 0, 1) }}
+                                    {{ mb_strtoupper(mb_substr($ticket->user->name, 0, 1)) }}
                                 </div>
                                 <div>
                                     <div class="font-medium text-white text-sm">{{ $ticket->user->name }}</div>

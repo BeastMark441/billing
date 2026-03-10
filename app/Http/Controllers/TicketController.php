@@ -4,22 +4,30 @@ namespace App\Http\Controllers;
 
 use App\Models\Ticket;
 use App\Models\TicketMessage;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class TicketController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
-        $tickets = $user->tickets()->latest()->paginate(10);
-        return view('dashboard.tickets.index', compact('tickets'));
+        $query = $user->tickets()->latest();
+        $filter = $request->get('status', 'all');
+
+        if ($filter !== 'all') {
+            $query->where('status', $filter);
+        }
+
+        $tickets = $query->paginate(10);
+        return view('dashboard.tickets.index', compact('tickets', 'filter'));
     }
 
     public function create()
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
         $orders = $user->orders()->whereIn('status', ['active', 'suspended', 'failed'])->get();
         return view('dashboard.tickets.create', compact('orders'));
@@ -27,7 +35,7 @@ class TicketController extends Controller
 
     public function store(Request $request)
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
 
         $validated = $request->validate([

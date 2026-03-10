@@ -45,18 +45,18 @@
                         <div class="text-sm font-medium text-white">Пароль</div>
                         <div class="text-sm text-gray-400">Последнее изменение: никогда</div>
                     </div>
-                    <button class="mt-2 sm:mt-0 text-sm font-medium text-[#a6cb40] hover:text-[#8eb330] transition-colors">
+                    <a href="{{ route('profile.edit') }}" class="mt-2 sm:mt-0 text-sm font-medium text-[#a6cb40] hover:text-[#8eb330] transition-colors">
                         Изменить пароль
-                    </button>
+                    </a>
                 </div>
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white/5 rounded-lg">
                     <div>
                         <div class="text-sm font-medium text-white">Двухэтапная аутентификация</div>
                         <div class="text-sm text-gray-400">Защитите свой аккаунт дополнительным кодом</div>
                     </div>
-                    <button class="mt-2 sm:mt-0 text-sm font-medium text-[#a6cb40] hover:text-[#8eb330] transition-colors">
+                    <a href="{{ route('profile.edit') }}" class="mt-2 sm:mt-0 text-sm font-medium text-[#a6cb40] hover:text-[#8eb330] transition-colors">
                         Настроить
-                    </button>
+                    </a>
                 </div>
             </div>
         </section>

@@ -33,16 +33,6 @@
 
         <div class="flex items-center gap-4">
             <x-primary-button class="bg-[#a6cb40] hover:bg-[#8eb330] text-[#0a0a0f] focus:ring-[#a6cb40]">{{ __('Сохранить') }}</x-primary-button>
-
-            @if (session('status') === 'password-updated')
-                <p
-                    x-data="{ show: true }"
-                    x-show="show"
-                    x-transition
-                    x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-gray-400"
-                >{{ __('Сохранено.') }}</p>
-            @endif
         </div>
     </form>
 </section>

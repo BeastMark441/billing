@@ -31,7 +31,6 @@ class User extends Authenticatable
         'birth_date',
         'balance',
         'role',
-        'avatar',
         'is_blocked',
         'blocked_until',
         'blocked_reason',

@@ -49,10 +49,9 @@
                         Перейти к оплате
                     </button>
                 </div>
-            </form>
+           </form>
         </div>
     </div>
-</x-app-layout>
 
             <!-- Promo Code Card -->
             <div class="bg-[#050508] border border-white/10 rounded-xl p-6 flex flex-col justify-center">

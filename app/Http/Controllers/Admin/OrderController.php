@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Services\PterodactylService;
 use Illuminate\Http\Request;
+use App\Notifications\GeneralNotification;
 
 class OrderController extends Controller
 {
@@ -215,20 +216,30 @@ class OrderController extends Controller
                 'type' => 'refund',
                 'description' => "Возврат средств за заказ #{$order->id}",
             ]);
+
+            // Notify User
+            $order->user->notify(new GeneralNotification(
+                'Возврат средств',
+                "Вам оформлен возврат средств в размере {$amount} ₽ на баланс за заказ #{$order->id}. Заказ был отменен.",
+                'info',
+                route('dashboard.billing'),
+                'Проверить баланс'
+            ));
         } else {
-            // External refund logic (manual for now)
-            // Just mark order or log it?
+            // External refund
+            // Notify User
+            $order->user->notify(new GeneralNotification(
+                'Возврат средств',
+                "Вам оформлен внешний возврат средств в размере {$amount} ₽ за заказ #{$order->id}. Ожидайте поступления на карту. Заказ был отменен.",
+                'info'
+            ));
         }
 
-        // Suspend/Cancel order after refund usually?
-        // Let's ask user or just log it. Usually refund implies cancellation.
-        // User asked just for refund button, let's assume it just processes money.
-        // But typically we should cancel the order too.
+        // Suspend/Cancel order after refund
         $order->update(['status' => 'cancelled']);
         if ($order->pterodactyl_server_id) {
             try {
                 $this->pterodactylService->suspendServer($order->pterodactyl_server_id);
-                // Or delete? Let's suspend for safety.
             } catch (\Exception $e) {}
         }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Notifications\GeneralNotification;
 
 class PaymentController extends Controller
 {
@@ -104,6 +105,15 @@ class PaymentController extends Controller
                 'type' => 'admin_deposit', 
                 'description' => 'Пополнение баланса (T-Bank #' . $payment->id . ')',
             ]);
+            
+            // Send Notification
+            $payment->user->notify(new GeneralNotification(
+                'Баланс пополнен',
+                'Ваш баланс успешно пополнен на ' . number_format($payment->amount, 2) . ' ₽.',
+                'success',
+                route('dashboard.billing.index'),
+                'Перейти к финансам'
+            ));
             
             \Illuminate\Support\Facades\Log::info("Payment #{$payment->id} confirmed via webhook. Balance updated.");
         } elseif ($status === 'REJECTED' || $status === 'CANCELED') {

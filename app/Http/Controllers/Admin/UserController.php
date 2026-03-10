@@ -7,7 +7,7 @@ use App\Models\BalanceLog;
 use App\Models\BannedIp;
 use App\Models\User;
 use App\Models\UserLog;
-use App\Notifications\AdminMessage;
+use App\Notifications\GeneralNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -60,11 +60,6 @@ class UserController extends Controller
 
         if ($request->filled('password')) {
             $user->password = Hash::make($validated['password']);
-        }
-
-        if ($request->hasFile('avatar')) {
-            $path = $request->file('avatar')->store('avatars', 'public');
-            $user->avatar = $path;
         }
 
         $user->save();
@@ -202,10 +197,12 @@ class UserController extends Controller
             'type' => ['required', 'in:info,warning,danger,success'],
         ]);
 
-        // Assume we have a notification class or just use database notification directly
-        // I will create AdminMessage notification
-        $user->notify(new AdminMessage($validated['message'], $validated['type']));
+        $user->notify(new GeneralNotification(
+            'Уведомление от администратора',
+            $validated['message'],
+            $validated['type'] === 'danger' ? 'error' : $validated['type'] // map danger to error
+        ));
 
-        return back()->with('success', 'Notification sent.');
+        return back()->with('success', 'Уведомление отправлено.');
     }
 }

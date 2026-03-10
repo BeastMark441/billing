@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Order;
+use App\Notifications\GeneralNotification;
 use App\Services\PterodactylService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -65,12 +66,29 @@ class CheckOrderExpirations extends Command
                     $order->update(['expires_at' => $newExpiration]);
                     
                     $this->info("Order #{$order->id} renewed until {$newExpiration}.");
+
+                    // Notify User
+                    $user->notify(new GeneralNotification(
+                        'Услуга продлена',
+                        "Ваш сервер {$order->service->name} успешно продлен до " . $newExpiration->format('d.m.Y') . ".",
+                        'success',
+                        route('orders.show', $order),
+                        'Открыть заказ'
+                    ));
                 } catch (\Exception $e) {
                     $this->error("Failed to auto-renew Order #{$order->id}: " . $e->getMessage());
                 }
             } else {
                 $this->warn("User {$user->email} has insufficient funds for auto-renewal of Order #{$order->id}. Balance: {$user->balance}, Cost: {$cost}");
-                // Optionally send notification to user about insufficient funds
+                
+                // Notify User about failure
+                $user->notify(new GeneralNotification(
+                    'Ошибка автопродления',
+                    "Не удалось продлить сервер {$order->service->name}. Недостаточно средств на балансе. Сервер будет приостановлен завтра.",
+                    'error',
+                    route('dashboard.billing'),
+                    'Пополнить баланс'
+                ));
             }
         }
 
@@ -102,6 +120,15 @@ class CheckOrderExpirations extends Command
                 $order->update(['status' => 'suspended']);
                 $this->info("Order #{$order->id} status updated to 'suspended'.");
 
+                // Notify User
+                $order->user->notify(new GeneralNotification(
+                    'Услуга приостановлена',
+                    "Срок действия сервера {$order->service->name} истек. Работа сервера приостановлена. Пожалуйста, продлите услугу, чтобы избежать удаления.",
+                    'warning',
+                    route('orders.show', $order),
+                    'Продлить сейчас'
+                ));
+
             } catch (\Exception $e) {
                 $this->error("Failed to suspend Order #{$order->id}: " . $e->getMessage());
                 
@@ -132,9 +159,34 @@ class CheckOrderExpirations extends Command
                     'server_ip' => null,
                     'server_port' => null
                 ]);
+
+                // Notify User
+                $order->user->notify(new GeneralNotification(
+                    'Услуга удалена',
+                    "Сервер {$order->service->name} был удален, так как не был оплачен более 7 дней.",
+                    'error'
+                ));
+
             } catch (\Exception $e) {
                 $this->error("Failed to terminate Order #{$order->id}: " . $e->getMessage());
             }
+        }
+
+        // 3. Notify about upcoming expiration (e.g. 3 days before)
+        // Find active orders expiring in exactly 3 days
+        $ordersExpiringSoon = Order::where('status', 'active')
+            ->whereNotNull('expires_at')
+            ->whereDate('expires_at', $now->copy()->addDays(3)->toDateString())
+            ->get();
+
+        foreach ($ordersExpiringSoon as $order) {
+             $order->user->notify(new GeneralNotification(
+                'Истекает срок аренды',
+                "Срок аренды сервера {$order->service->name} истекает через 3 дня (" . $order->expires_at->format('d.m.Y') . ").",
+                'info',
+                route('orders.show', $order),
+                'Продлить'
+            ));
         }
 
         $this->info('Expiration check completed.');

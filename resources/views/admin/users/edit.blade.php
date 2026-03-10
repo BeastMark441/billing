@@ -22,6 +22,9 @@
             <button @click="tab = 'notifications'" :class="{ 'border-blue-500 text-blue-500': tab === 'notifications', 'border-transparent text-gray-400 hover:text-white': tab !== 'notifications' }" class="px-6 py-3 border-b-2 font-medium text-sm transition-colors whitespace-nowrap">
                 Уведомления
             </button>
+            <button @click="tab = 'services'" :class="{ 'border-blue-500 text-blue-500': tab === 'services', 'border-transparent text-gray-400 hover:text-white': tab !== 'services' }" class="px-6 py-3 border-b-2 font-medium text-sm transition-colors whitespace-nowrap">
+                Услуги
+            </button>
             <button @click="tab = 'logs'" :class="{ 'border-blue-500 text-blue-500': tab === 'logs', 'border-transparent text-gray-400 hover:text-white': tab !== 'logs' }" class="px-6 py-3 border-b-2 font-medium text-sm transition-colors whitespace-nowrap">
                 Логи активности
             </button>
@@ -35,18 +38,16 @@
                 @method('PUT')
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Avatar -->
+                    <!-- Avatar (Initials) -->
                     <div class="col-span-full">
                         <label class="block text-sm font-medium text-gray-400 mb-2">Аватар</label>
                         <div class="flex items-center gap-4">
-                            <div class="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center text-white font-bold overflow-hidden">
-                                @if($user->avatar)
-                                    <img src="{{ Storage::url($user->avatar) }}" alt="{{ $user->name }}" class="w-full h-full object-cover">
-                                @else
-                                    {{ substr($user->name, 0, 1) }}
-                                @endif
+                            <div class="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center text-white text-3xl font-bold">
+                                {{ mb_strtoupper(mb_substr($user->name, 0, 1)) }}
                             </div>
-                            <input type="file" name="avatar" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20">
+                            <div class="text-sm text-gray-500">
+                                Аватар генерируется автоматически на основе имени.
+                            </div>
                         </div>
                     </div>
 
@@ -333,6 +334,59 @@
                         Отправить
                     </button>
                 </form>
+            </div>
+        </div>
+
+        <div x-show="tab === 'services'" class="space-y-6" style="display: none;">
+            <div class="flex justify-end mb-4">
+                <a href="{{ route('admin.orders.create', ['user_id' => $user->id]) }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Добавить услугу
+                </a>
+            </div>
+
+            <div class="bg-[#0f0f13] border border-white/5 rounded-2xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-white/5 border-b border-white/5 text-gray-400 text-xs uppercase tracking-wider">
+                            <tr>
+                                <th class="px-6 py-4 font-medium">ID</th>
+                                <th class="px-6 py-4 font-medium">Услуга</th>
+                                <th class="px-6 py-4 font-medium">Статус</th>
+                                <th class="px-6 py-4 font-medium">Цена</th>
+                                <th class="px-6 py-4 font-medium">Истекает</th>
+                                <th class="px-6 py-4 font-medium"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            @forelse($user->orders as $order)
+                            <tr class="hover:bg-white/5 transition-colors">
+                                <td class="px-6 py-4 text-sm text-gray-400">#{{ $order->id }}</td>
+                                <td class="px-6 py-4 text-white font-medium">{{ $order->service->name }}</td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium 
+                                        {{ $order->status === 'active' ? 'bg-green-500/10 text-green-500' : 
+                                          ($order->status === 'suspended' ? 'bg-yellow-500/10 text-yellow-500' : 
+                                          ($order->status === 'cancelled' ? 'bg-gray-500/10 text-gray-500' : 'bg-blue-500/10 text-blue-500')) }}">
+                                        {{ ucfirst($order->status) }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-white">{{ number_format($order->price, 2) }} ₽</td>
+                                <td class="px-6 py-4 text-sm text-gray-400">{{ $order->expires_at ? $order->expires_at->format('d.m.Y') : '-' }}</td>
+                                <td class="px-6 py-4 text-right">
+                                    <a href="{{ route('admin.orders.show', $order) }}" class="text-blue-400 hover:text-blue-300 hover:underline text-sm">Управление</a>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                                    У пользователя нет активных услуг
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 

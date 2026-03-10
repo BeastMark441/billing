@@ -46,14 +46,15 @@
             <x-input-error class="mt-2" :messages="$errors->get('email')" />
 
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
-                <div>
-                    <p class="text-sm mt-2 text-gray-200">
+                <div class="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                    <p class="text-sm text-yellow-500 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                         {{ __('Ваш адрес электронной почты не подтвержден.') }}
-
-                        <button form="send-verification" class="underline text-sm text-gray-400 hover:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#a6cb40]">
-                            {{ __('Нажмите здесь, чтобы повторно отправить письмо с подтверждением.') }}
-                        </button>
                     </p>
+
+                    <button form="send-verification" class="mt-2 text-sm text-gray-300 hover:text-white underline focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#a6cb40] rounded-md">
+                        {{ __('Нажмите здесь, чтобы повторно отправить письмо с подтверждением.') }}
+                    </button>
 
                     @if (session('status') === 'verification-link-sent')
                         <p class="mt-2 font-medium text-sm text-green-400">

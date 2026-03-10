@@ -16,7 +16,7 @@
     >{{ __('Удалить аккаунт') }}</x-danger-button>
 
     <x-modal name="confirm-user-deletion" :show="$errors->userDeletion->isNotEmpty()" focusable>
-        <form method="post" action="{{ route('profile.destroy') }}" class="p-6 bg-[#050508] border border-white/10">
+        <form method="post" action="{{ route('profile.destroy') }}" class="p-6 bg-[#0a0a0f] border border-white/10 rounded-xl">
             @csrf
             @method('delete')
 
