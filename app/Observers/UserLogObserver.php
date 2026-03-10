@@ -51,8 +51,9 @@ class UserLogObserver
         UserLog::create([
             'user_id' => $user->id,
             'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
             'action' => strtolower($modelName) . '_' . $actionType,
-            'description' => $description,
+            'details' => $description,
         ]);
     }
 }

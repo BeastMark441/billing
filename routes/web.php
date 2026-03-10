@@ -58,7 +58,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/infrastructure/services/{service}/order', [\App\Http\Controllers\OrderController::class, 'store'])->name('orders.store');
     Route::post('/orders/{order}/auto-renewal', [\App\Http\Controllers\OrderController::class, 'toggleAutoRenewal'])->name('orders.auto-renewal');
     Route::post('/orders/{order}/renew', [\App\Http\Controllers\OrderController::class, 'renew'])->name('orders.renew');
+
+    // Payments
+    Route::post('/payments/create', [\App\Http\Controllers\PaymentController::class, 'store'])->name('payments.create');
+    Route::get('/payments/success', [\App\Http\Controllers\PaymentController::class, 'success'])->name('payments.success');
+    Route::get('/payments/failed', [\App\Http\Controllers\PaymentController::class, 'failed'])->name('payments.failed');
 });
+
+Route::post('/payments/webhook', [\App\Http\Controllers\PaymentController::class, 'webhook'])->name('payments.webhook');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -126,6 +133,9 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     
     Route::post('orders/{order}/change-plan', [\App\Http\Controllers\Admin\OrderController::class, 'changePlan'])->name('orders.change-plan');
     Route::post('orders/{order}/refund', [\App\Http\Controllers\Admin\OrderController::class, 'refund'])->name('orders.refund');
+
+    // Admin Finance
+    Route::get('/finance', [\App\Http\Controllers\Admin\FinanceController::class, 'index'])->name('finance.index');
 });
 
 require __DIR__.'/auth.php';

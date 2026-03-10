@@ -15,13 +15,44 @@
                     <div class="text-5xl font-bold text-white mb-8">{{ number_format($user->balance, 2, '.', ' ') }} ₽</div>
                     
                     <div class="flex flex-wrap gap-4">
-                        <button class="bg-[#a6cb40] hover:bg-[#8eb330] text-[#0a0a0f] px-6 py-3 rounded-lg font-bold transition-all shadow-[0_0_15px_rgba(166,203,64,0.2)] hover:shadow-[0_0_20px_rgba(166,203,64,0.4)] flex items-center gap-2">
+                        <button onclick="document.getElementById('topUpModal').classList.remove('hidden')" class="bg-[#a6cb40] hover:bg-[#8eb330] text-[#0a0a0f] px-6 py-3 rounded-lg font-bold transition-all shadow-[0_0_15px_rgba(166,203,64,0.2)] hover:shadow-[0_0_20px_rgba(166,203,64,0.4)] flex items-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                             Пополнить баланс
                         </button>
                     </div>
                 </div>
             </div>
+
+    <!-- Top Up Modal -->
+    <div id="topUpModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-[#1a1a20] rounded-2xl max-w-md w-full p-6 border border-white/10">
+            <h3 class="text-xl font-bold text-white mb-4">Пополнение баланса</h3>
+            <p class="text-gray-400 text-sm mb-6">Введите сумму пополнения. Вы будете перенаправлены на защищенную страницу оплаты T-Bank.</p>
+            
+            <form method="POST" action="{{ route('payments.create') }}">
+                @csrf
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Сумма (₽)</label>
+                    <input type="number" name="amount" min="10" max="30000" step="1" required placeholder="500" 
+                           class="w-full bg-[#0a0a0f] border border-white/10 rounded-lg px-4 py-2 text-white text-lg font-bold focus:border-[#a6cb40] focus:ring focus:ring-[#a6cb40] focus:ring-opacity-50">
+                    <div class="flex justify-between text-xs text-gray-500 mt-2">
+                        <span>Мин: 10 ₽</span>
+                        <span>Макс: 30 000 ₽</span>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="document.getElementById('topUpModal').classList.add('hidden')" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
+                        Отмена
+                    </button>
+                    <button type="submit" class="bg-[#a6cb40] hover:bg-[#8eb330] text-[#0a0a0f] font-bold py-2 px-6 rounded-lg transition-colors">
+                        Перейти к оплате
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</x-app-layout>
 
             <!-- Promo Code Card -->
             <div class="bg-[#050508] border border-white/10 rounded-xl p-6 flex flex-col justify-center">

@@ -41,4 +41,10 @@ return [
         'app_key' => env('PTERODACTYL_APP_KEY'),
     ],
 
+    'tbank' => [
+        'terminal_key' => env('TBANK_TERMINAL_KEY'),
+        'password' => env('TBANK_PASSWORD'),
+        'url' => env('TBANK_API_URL', 'https://securepay.tinkoff.ru/v2/'),
+    ],
+
 ];
