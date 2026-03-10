@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Notifications\GeneralNotification;
 use App\Services\PterodactylService;
 use Illuminate\Http\Request;
-use App\Notifications\GeneralNotification;
 
 class OrderController extends Controller
 {
@@ -28,13 +28,13 @@ class OrderController extends Controller
 
         if ($request->has('search') && $request->search) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('id', 'like', "%{$search}%")
-                  ->orWhere('pterodactyl_server_identifier', 'like', "%{$search}%")
-                  ->orWhereHas('user', function($q) use ($search) {
-                      $q->where('email', 'like', "%{$search}%")
-                        ->orWhere('name', 'like', "%{$search}%");
-                  });
+                    ->orWhere('pterodactyl_server_identifier', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($q) use ($search) {
+                        $q->where('email', 'like', "%{$search}%")
+                            ->orWhere('name', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -47,6 +47,7 @@ class OrderController extends Controller
     {
         $users = \App\Models\User::orderBy('email')->get();
         $services = \App\Models\InfrastructureService::where('is_active', true)->get();
+
         return view('admin.orders.create', compact('users', 'services'));
     }
 
@@ -92,13 +93,13 @@ class OrderController extends Controller
             }
             // Mark as paid/active if provisioned or free
             $order->update([
-                'status' => 'active', 
-                'paid_at' => now()
+                'status' => 'active',
+                'paid_at' => now(),
             ]);
-            
+
             return redirect()->route('admin.orders.show', $order)->with('success', 'Заказ успешно создан и отправлен на установку.');
         } catch (\Exception $e) {
-            return redirect()->route('admin.orders.show', $order)->with('error', 'Заказ создан, но ошибка установки: ' . $e->getMessage());
+            return redirect()->route('admin.orders.show', $order)->with('error', 'Заказ создан, но ошибка установки: '.$e->getMessage());
         }
     }
 
@@ -130,10 +131,10 @@ class OrderController extends Controller
                 }
             } catch (\Exception $e) {
                 return redirect()->route('admin.orders.show', $order)
-                    ->with('error', 'Статус обновлен в базе, но ошибка при синхронизации с панелью: ' . $e->getMessage());
+                    ->with('error', 'Статус обновлен в базе, но ошибка при синхронизации с панелью: '.$e->getMessage());
             }
         }
-        
+
         // Clear cache if any (standard Laravel doesn't cache models by default but just in case)
         $order->refresh();
 
@@ -167,7 +168,7 @@ class OrderController extends Controller
 
         $newService = \App\Models\InfrastructureService::find($validated['service_id']);
 
-        if (!$newService) {
+        if (! $newService) {
             return back()->with('error', 'Тариф не найден.');
         }
 
@@ -175,7 +176,7 @@ class OrderController extends Controller
         // This is complex and depends on Pterodactyl API capabilities (Build/Startup endpoints)
         // For MVP, we will update local order and price, but server update might require more code.
         // Let's assume PterodactylService has updateServerBuild method (we need to implement it).
-        
+
         try {
             // Update Price and Service ID
             $order->update([
@@ -193,7 +194,7 @@ class OrderController extends Controller
 
             return back()->with('success', 'Тариф успешно изменен.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Ошибка при смене тарифа: ' . $e->getMessage());
+            return back()->with('error', 'Ошибка при смене тарифа: '.$e->getMessage());
         }
     }
 
@@ -240,9 +241,10 @@ class OrderController extends Controller
         if ($order->pterodactyl_server_id) {
             try {
                 $this->pterodactylService->suspendServer($order->pterodactyl_server_id);
-            } catch (\Exception $e) {}
+            } catch (\Exception $e) {
+            }
         }
 
-        return back()->with('success', "Возврат {$amount} ₽ оформлен (" . ($type === 'balance' ? 'На баланс' : 'Внешний') . "). Заказ отменен.");
+        return back()->with('success', "Возврат {$amount} ₽ оформлен (".($type === 'balance' ? 'На баланс' : 'Внешний').'). Заказ отменен.');
     }
 }

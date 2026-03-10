@@ -89,7 +89,7 @@ class OrderController extends Controller
             abort(403);
         }
 
-        $order->update(['auto_renewal' => !$order->auto_renewal]);
+        $order->update(['auto_renewal' => ! $order->auto_renewal]);
 
         return back()->with('success', 'Настройка автопродления обновлена.');
     }
@@ -101,7 +101,7 @@ class OrderController extends Controller
         }
 
         if ($order->status !== 'suspended' && $order->status !== 'active') {
-             return back()->with('error', 'Этот заказ нельзя продлить вручную.');
+            return back()->with('error', 'Этот заказ нельзя продлить вручную.');
         }
 
         /** @var \App\Models\User $user */
@@ -114,7 +114,7 @@ class OrderController extends Controller
 
         try {
             $user->decrement('balance', $cost);
-            
+
             // Log transaction
             $user->balanceLogs()->create([
                 'amount' => -$cost,
@@ -123,8 +123,8 @@ class OrderController extends Controller
             ]);
 
             // Extend expiration
-            $newExpiration = $order->expires_at && $order->expires_at->isFuture() 
-                ? $order->expires_at->copy()->addMonth() 
+            $newExpiration = $order->expires_at && $order->expires_at->isFuture()
+                ? $order->expires_at->copy()->addMonth()
                 : \Carbon\Carbon::now()->addMonth();
 
             $order->update(['expires_at' => $newExpiration]);
@@ -137,9 +137,9 @@ class OrderController extends Controller
                 $order->update(['status' => 'active']);
             }
 
-            return back()->with('success', 'Услуга успешно продлена до ' . $newExpiration->format('d.m.Y'));
+            return back()->with('success', 'Услуга успешно продлена до '.$newExpiration->format('d.m.Y'));
         } catch (Exception $e) {
-            return back()->with('error', 'Ошибка продления: ' . $e->getMessage());
+            return back()->with('error', 'Ошибка продления: '.$e->getMessage());
         }
     }
 }

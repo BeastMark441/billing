@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Notifications\GeneralNotification;
+use Illuminate\Http\Request;
 
 class PaymentController extends Controller
 {
@@ -33,10 +33,12 @@ class PaymentController extends Controller
 
         try {
             $url = $this->tbankService->init($payment);
+
             return redirect($url);
         } catch (\Exception $e) {
             $payment->update(['status' => 'error', 'payload' => ['error' => $e->getMessage()]]);
-            return back()->with('error', 'Ошибка создания платежа: ' . $e->getMessage());
+
+            return back()->with('error', 'Ошибка создания платежа: '.$e->getMessage());
         }
     }
 
@@ -60,15 +62,16 @@ class PaymentController extends Controller
 
         // Extract OrderId
         $orderId = $data['OrderId'] ?? null;
-        if (!$orderId) {
+        if (! $orderId) {
             return response('Invalid OrderId', 400);
         }
 
         // Validate Token signature
         // T-Bank sends Token in request. We need to verify it.
         // We MUST verify signature before processing money!
-        if (!$this->tbankService->validateCallback($data)) {
+        if (! $this->tbankService->validateCallback($data)) {
             \Illuminate\Support\Facades\Log::warning('TBank Webhook: Invalid Token', $data);
+
             return response('Invalid Token', 400);
         }
 
@@ -76,7 +79,7 @@ class PaymentController extends Controller
         $paymentId = explode('_', $orderId)[0];
         $payment = \App\Models\Payment::find($paymentId);
 
-        if (!$payment) {
+        if (! $payment) {
             return response('Payment not found', 404);
         }
 
@@ -85,7 +88,7 @@ class PaymentController extends Controller
 
         // If payment is already confirmed, ignore (idempotency)
         if ($oldStatus === 'confirmed') {
-             return response('OK', 200);
+            return response('OK', 200);
         }
 
         $payment->update([
@@ -102,23 +105,23 @@ class PaymentController extends Controller
             // Use 'admin_deposit' or create new type 'deposit'
             $payment->user->balanceLogs()->create([
                 'amount' => $payment->amount,
-                'type' => 'admin_deposit', 
-                'description' => 'Пополнение баланса (T-Bank #' . $payment->id . ')',
+                'type' => 'admin_deposit',
+                'description' => 'Пополнение баланса (T-Bank #'.$payment->id.')',
             ]);
-            
+
             // Send Notification
             $payment->user->notify(new GeneralNotification(
                 'Баланс пополнен',
-                'Ваш баланс успешно пополнен на ' . number_format($payment->amount, 2) . ' ₽.',
+                'Ваш баланс успешно пополнен на '.number_format($payment->amount, 2).' ₽.',
                 'success',
                 route('dashboard.billing.index'),
                 'Перейти к финансам'
             ));
-            
+
             \Illuminate\Support\Facades\Log::info("Payment #{$payment->id} confirmed via webhook. Balance updated.");
         } elseif ($status === 'REJECTED' || $status === 'CANCELED') {
-             // Just log/update status (already done above)
-             \Illuminate\Support\Facades\Log::info("Payment #{$payment->id} failed/canceled via webhook.");
+            // Just log/update status (already done above)
+            \Illuminate\Support\Facades\Log::info("Payment #{$payment->id} failed/canceled via webhook.");
         }
 
         return response('OK', 200);

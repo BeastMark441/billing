@@ -48,7 +48,7 @@ class PterodactylService
 
             // 5. Update Order
             $attributes = $response['attributes'];
-            
+
             // Extract Allocation from Relationships
             // Usually in attributes.relationships.allocations.data[0].attributes
             $allocation = null;
@@ -73,7 +73,7 @@ class PterodactylService
             \Illuminate\Support\Facades\Log::error('Pterodactyl Provisioning Error: '.$e->getMessage());
             $order->update([
                 'status' => 'failed',
-                'last_error' => $e->getMessage()
+                'last_error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -83,24 +83,24 @@ class PterodactylService
     {
         // First we need to find the nest for this egg or just search for the egg directly if API supports it
         // Pterodactyl API structure: /api/application/nests/{nest}/eggs/{egg}
-        // Since we only have egg_id, we might need to search or iterate nests. 
+        // Since we only have egg_id, we might need to search or iterate nests.
         // A common trick is to try to get the egg directly if we knew the nest, but we don't.
         // However, usually we can get all eggs from all nests and find it.
-        
+
         // Optimization: Pterodactyl allows getting egg with `include=nest` if we know the endpoint
-        // But standard endpoint is nested. Let's try to find it by iterating nests if needed, 
-        // OR if the user provides nest_id. 
+        // But standard endpoint is nested. Let's try to find it by iterating nests if needed,
+        // OR if the user provides nest_id.
         // For better UX, let's assume we fetch all nests and their eggs to find the match.
-        
+
         $nestsResponse = Http::withToken($this->appApiKey)
             ->withoutVerifying()
             ->acceptJson()
-            ->get($this->baseUrl . '/api/application/nests?include=eggs');
-            
-        if (!$nestsResponse->successful()) {
+            ->get($this->baseUrl.'/api/application/nests?include=eggs');
+
+        if (! $nestsResponse->successful()) {
             return null;
         }
-        
+
         foreach ($nestsResponse->json()['data'] as $nest) {
             if (isset($nest['attributes']['relationships']['eggs']['data'])) {
                 foreach ($nest['attributes']['relationships']['eggs']['data'] as $egg) {
@@ -108,13 +108,13 @@ class PterodactylService
                         return [
                             'docker_image' => $egg['attributes']['docker_image'],
                             'startup' => $egg['attributes']['startup'],
-                            'nest_id' => $nest['attributes']['id']
+                            'nest_id' => $nest['attributes']['id'],
                         ];
                     }
                 }
             }
         }
-        
+
         return null;
     }
 
@@ -126,11 +126,11 @@ class PterodactylService
                 ->withoutVerifying()
                 ->acceptJson()
                 ->get($this->baseUrl.'/api/application/users/'.$user->pterodactyl_id);
-                
+
             if ($response->successful()) {
                 return $user->pterodactyl_id;
             }
-            
+
             // If 404, user was deleted in panel but exists in billing. Clear ID and proceed to create/find.
             $user->update(['pterodactyl_id' => null]);
         }
@@ -203,7 +203,7 @@ class PterodactylService
     {
         // Auto-fetch Egg Details if missing in specs
         $eggDetails = $this->getEggDetails((int) ($specs['egg_id'] ?? 1));
-        
+
         $dockerImage = $specs['docker_image'] ?? $eggDetails['docker_image'] ?? 'quay.io/pterodactyl/core:java';
         $startup = $specs['startup'] ?? $eggDetails['startup'] ?? 'java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar {{SERVER_JARFILE}}';
         $eggId = (int) ($specs['egg_id'] ?? 1);
@@ -243,36 +243,36 @@ class PterodactylService
         // Try to find a free allocation on the specified node
         // Pterodactyl API: /api/application/nodes/{node}/allocations
         // We need to iterate pages to find one where 'assigned' is false
-        
+
         $page = 1;
         while ($page <= 5) { // Limit pages to prevent infinite loops
             $response = Http::withToken($this->appApiKey)
                 ->withoutVerifying()
                 ->acceptJson()
-                ->get($this->baseUrl . "/api/application/nodes/{$nodeId}/allocations?page={$page}");
-                
-            if (!$response->successful()) {
-                // If we can't fetch allocations, maybe fallback or throw? 
+                ->get($this->baseUrl."/api/application/nodes/{$nodeId}/allocations?page={$page}");
+
+            if (! $response->successful()) {
+                // If we can't fetch allocations, maybe fallback or throw?
                 // Let's assume we can't find one and throw exception
-                throw new Exception('Failed to fetch allocations from node ' . $nodeId);
+                throw new Exception('Failed to fetch allocations from node '.$nodeId);
             }
-            
+
             $data = $response->json();
-            
+
             foreach ($data['data'] as $allocation) {
-                if (!$allocation['attributes']['assigned']) {
+                if (! $allocation['attributes']['assigned']) {
                     return $allocation['attributes']['id'];
                 }
             }
-            
+
             if ($data['meta']['pagination']['current_page'] >= $data['meta']['pagination']['total_pages']) {
                 break;
             }
-            
+
             $page++;
         }
-        
-        throw new Exception('No free allocations found on node ' . $nodeId);
+
+        throw new Exception('No free allocations found on node '.$nodeId);
     }
 
     protected function createPterodactylServer($data)
@@ -294,9 +294,9 @@ class PterodactylService
         $response = Http::withToken($this->appApiKey)
             ->withoutVerifying()
             ->acceptJson()
-            ->get($this->baseUrl . '/api/application/servers/' . $serverId);
+            ->get($this->baseUrl.'/api/application/servers/'.$serverId);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             return null;
         }
 
@@ -308,10 +308,10 @@ class PterodactylService
         $response = Http::withToken($this->appApiKey)
             ->withoutVerifying()
             ->acceptJson()
-            ->post($this->baseUrl . '/api/application/servers/' . $serverId . '/suspend');
+            ->post($this->baseUrl.'/api/application/servers/'.$serverId.'/suspend');
 
-        if (!$response->successful()) {
-            throw new Exception('Failed to suspend server: ' . $response->body());
+        if (! $response->successful()) {
+            throw new Exception('Failed to suspend server: '.$response->body());
         }
 
         return true;
@@ -322,10 +322,10 @@ class PterodactylService
         $response = Http::withToken($this->appApiKey)
             ->withoutVerifying()
             ->acceptJson()
-            ->post($this->baseUrl . '/api/application/servers/' . $serverId . '/unsuspend');
+            ->post($this->baseUrl.'/api/application/servers/'.$serverId.'/unsuspend');
 
-        if (!$response->successful()) {
-            throw new Exception('Failed to unsuspend server: ' . $response->body());
+        if (! $response->successful()) {
+            throw new Exception('Failed to unsuspend server: '.$response->body());
         }
 
         return true;
@@ -336,10 +336,10 @@ class PterodactylService
         $response = Http::withToken($this->appApiKey)
             ->withoutVerifying()
             ->acceptJson()
-            ->delete($this->baseUrl . '/api/application/servers/' . $serverId);
+            ->delete($this->baseUrl.'/api/application/servers/'.$serverId);
 
-        if (!$response->successful()) {
-            throw new Exception('Failed to delete server: ' . $response->body());
+        if (! $response->successful()) {
+            throw new Exception('Failed to delete server: '.$response->body());
         }
 
         return true;

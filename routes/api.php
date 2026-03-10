@@ -15,6 +15,7 @@ Route::get('/pterodactyl/egg/{id}', function (int $id, PterodactylService $servi
     if ($details) {
         return response()->json($details);
     }
+
     return response()->json(['error' => 'Egg not found'], 404);
 });
 

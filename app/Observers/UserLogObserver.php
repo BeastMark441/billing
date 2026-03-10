@@ -27,7 +27,7 @@ class UserLogObserver
 
     protected function logAction($model, $actionType)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return;
         }
 
@@ -37,22 +37,22 @@ class UserLogObserver
 
         // Customize description based on model
         if ($model instanceof Order) {
-            $description = "Заказ #{$model->id} ({$model->service->name}) был " . ($actionType === 'created' ? 'создан' : ($actionType === 'updated' ? 'обновлен' : 'удален'));
+            $description = "Заказ #{$model->id} ({$model->service->name}) был ".($actionType === 'created' ? 'создан' : ($actionType === 'updated' ? 'обновлен' : 'удален'));
             if ($actionType === 'updated' && $model->isDirty('status')) {
                 $description .= ". Статус изменен на {$model->status}";
             }
         } elseif ($model instanceof Ticket) {
-            $description = "Тикет #{$model->id} '{$model->subject}' был " . ($actionType === 'created' ? 'создан' : ($actionType === 'updated' ? 'обновлен' : 'удален'));
+            $description = "Тикет #{$model->id} '{$model->subject}' был ".($actionType === 'created' ? 'создан' : ($actionType === 'updated' ? 'обновлен' : 'удален'));
         } elseif ($model instanceof TicketMessage) {
             $ticketId = $model->ticket_id;
-            $description = "Сообщение в тикете #{$ticketId} было " . ($actionType === 'created' ? 'отправлено' : ($actionType === 'updated' ? 'изменено' : 'удалено'));
+            $description = "Сообщение в тикете #{$ticketId} было ".($actionType === 'created' ? 'отправлено' : ($actionType === 'updated' ? 'изменено' : 'удалено'));
         }
 
         UserLog::create([
             'user_id' => $user->id,
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
-            'action' => strtolower($modelName) . '_' . $actionType,
+            'action' => strtolower($modelName).'_'.$actionType,
             'details' => $description,
         ]);
     }

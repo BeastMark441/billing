@@ -36,9 +36,10 @@ class SyncServerStatus extends Command
         foreach ($orders as $order) {
             try {
                 $server = $pterodactylService->getServerDetails($order->pterodactyl_server_id);
-                
-                if (!$server) {
+
+                if (! $server) {
                     $this->warn("Server for Order #{$order->id} not found in Pterodactyl (404).");
+
                     // Optionally mark as cancelled or failed?
                     continue;
                 }
@@ -49,7 +50,7 @@ class SyncServerStatus extends Command
                 if ($isSuspended && $localStatus === 'active') {
                     $this->info("Order #{$order->id}: Remote is SUSPENDED, Local is ACTIVE. Updating to SUSPENDED.");
                     $order->update(['status' => 'suspended']);
-                } elseif (!$isSuspended && $localStatus === 'suspended') {
+                } elseif (! $isSuspended && $localStatus === 'suspended') {
                     // Be careful here: maybe it was suspended by admin locally?
                     // But if it's active in panel, it should probably be active locally unless unpaid.
                     // Let's check expiration.
@@ -63,7 +64,7 @@ class SyncServerStatus extends Command
                 }
 
             } catch (\Exception $e) {
-                $this->error("Error checking Order #{$order->id}: " . $e->getMessage());
+                $this->error("Error checking Order #{$order->id}: ".$e->getMessage());
             }
         }
 

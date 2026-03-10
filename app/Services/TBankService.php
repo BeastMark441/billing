@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Log;
 class TBankService
 {
     protected $terminalKey;
+
     protected $password;
+
     protected $baseUrl;
 
     public function __construct()
@@ -26,11 +28,11 @@ class TBankService
     {
         // Amount in kopecks (cents)
         $amountKopecks = (int) ($payment->amount * 100);
-        
+
         $params = [
             'TerminalKey' => $this->terminalKey,
             'Amount' => $amountKopecks,
-            'OrderId' => $payment->id . '_' . time(), // Unique order ID
+            'OrderId' => $payment->id.'_'.time(), // Unique order ID
             'Description' => 'Пополнение баланса NODEUM',
             'SuccessURL' => route('payments.success'),
             'FailURL' => route('payments.failed'),
@@ -41,10 +43,10 @@ class TBankService
         // For testing/demo we might skip it or include minimal data.
         // Important: DATA and Receipt should be encoded in JSON if passed, BUT T-Bank API expects them as nested arrays in JSON body request.
         // However, for Token generation, they are excluded.
-        
+
         $receipt = [
             'Email' => $payment->user->email,
-            'Taxation' => 'osn', 
+            'Taxation' => 'osn',
             'Items' => [
                 [
                     'Name' => 'Пополнение баланса',
@@ -52,10 +54,10 @@ class TBankService
                     'Quantity' => 1,
                     'Amount' => $amountKopecks,
                     'Tax' => 'none',
-                ]
-            ]
+                ],
+            ],
         ];
-        
+
         $params['Receipt'] = $receipt;
         $params['DATA'] = ['Email' => $payment->user->email];
 
@@ -63,19 +65,19 @@ class TBankService
         $params['Token'] = $this->generateToken($params);
 
         // Send JSON request
-        $response = Http::asJson()->post($this->baseUrl . 'Init', $params);
+        $response = Http::asJson()->post($this->baseUrl.'Init', $params);
 
-        if (!$response->successful() || !$response->json('Success')) {
+        if (! $response->successful() || ! $response->json('Success')) {
             Log::error('TBank Init Error', ['response' => $response->json(), 'payment_id' => $payment->id]);
-            throw new \Exception('Ошибка инициализации платежа: ' . ($response->json('Message') ?? 'Unknown error') . ' (' . ($response->json('Details') ?? '') . ')');
+            throw new \Exception('Ошибка инициализации платежа: '.($response->json('Message') ?? 'Unknown error').' ('.($response->json('Details') ?? '').')');
         }
 
         $data = $response->json();
-        
+
         $payment->update([
             'payment_id' => $data['PaymentId'],
             'payment_url' => $data['PaymentURL'],
-            'status' => 'pending', 
+            'status' => 'pending',
             'payload' => array_merge($payment->payload ?? [], ['init_response' => $data]),
         ]);
 
@@ -94,7 +96,7 @@ class TBankService
 
         $params['Token'] = $this->generateToken($params);
 
-        $response = Http::post($this->baseUrl . 'GetState', $params);
+        $response = Http::post($this->baseUrl.'GetState', $params);
 
         return $response->json();
     }
@@ -108,7 +110,7 @@ class TBankService
         // T-Bank documentation: "В формировании токена участвуют все параметры, кроме Token"
         // But specifically for objects like Receipt or DATA, they might be excluded or serialized.
         // Usually Init request token is generated WITHOUT Receipt and DATA.
-        
+
         $tokenParams = $params;
         unset($tokenParams['Token']);
         unset($tokenParams['Receipt']);
@@ -124,7 +126,7 @@ class TBankService
         $values = '';
         foreach ($tokenParams as $key => $value) {
             // Only scalar values
-            if (!is_array($value) && !is_object($value)) {
+            if (! is_array($value) && ! is_object($value)) {
                 $values .= $value;
             }
         }
@@ -137,9 +139,9 @@ class TBankService
     {
         $token = $data['Token'] ?? '';
         unset($data['Token']);
-        
+
         $generatedToken = $this->generateToken($data);
-        
+
         return $token === $generatedToken;
     }
 }

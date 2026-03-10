@@ -54,7 +54,7 @@ class InfrastructureServiceController extends Controller
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'one_per_user' => 'boolean',
-            
+
             // Pterodactyl Fields
             'pterodactyl.egg_id' => 'nullable|integer',
             'pterodactyl.nest_id' => 'nullable|integer',
@@ -71,27 +71,27 @@ class InfrastructureServiceController extends Controller
         ]);
 
         $data = $request->only([
-            'infrastructure_category_id', 
-            'infrastructure_subcategory_id', 
-            'name', 
-            'slug', 
-            'description', 
-            'price', 
-            'sort_order', 
+            'infrastructure_category_id',
+            'infrastructure_subcategory_id',
+            'name',
+            'slug',
+            'description',
+            'price',
+            'sort_order',
             'is_active',
-            'one_per_user'
+            'one_per_user',
         ]);
 
         // Process Pterodactyl specs
         if ($request->has('pterodactyl')) {
             $pterodactylData = $request->input('pterodactyl');
-            // Filter out null values to keep JSON clean, or keep them if needed. 
+            // Filter out null values to keep JSON clean, or keep them if needed.
             // For now, let's keep keys but remove empty strings if any.
-            $specs = array_filter($pterodactylData, function($value) {
-                return !is_null($value) && $value !== '';
+            $specs = array_filter($pterodactylData, function ($value) {
+                return ! is_null($value) && $value !== '';
             });
-            
-            if (!empty($specs)) {
+
+            if (! empty($specs)) {
                 $data['specifications'] = $specs;
             }
         }
@@ -146,25 +146,25 @@ class InfrastructureServiceController extends Controller
         ]);
 
         $data = $request->only([
-            'infrastructure_category_id', 
-            'infrastructure_subcategory_id', 
-            'name', 
-            'slug', 
-            'description', 
-            'price', 
-            'sort_order', 
+            'infrastructure_category_id',
+            'infrastructure_subcategory_id',
+            'name',
+            'slug',
+            'description',
+            'price',
+            'sort_order',
             'is_active',
-            'one_per_user'
+            'one_per_user',
         ]);
 
         // Process Pterodactyl specs
         if ($request->has('pterodactyl')) {
             $pterodactylData = $request->input('pterodactyl');
-            $specs = array_filter($pterodactylData, function($value) {
-                return !is_null($value) && $value !== '';
+            $specs = array_filter($pterodactylData, function ($value) {
+                return ! is_null($value) && $value !== '';
             });
-            
-            if (!empty($specs)) {
+
+            if (! empty($specs)) {
                 $data['specifications'] = $specs;
             } else {
                 $data['specifications'] = null;

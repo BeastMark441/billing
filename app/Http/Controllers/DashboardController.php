@@ -58,7 +58,7 @@ class DashboardController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        
+
         $categories = InfrastructureCategory::where('is_active', true)
             ->with(['subcategories' => function ($query) {
                 $query->where('is_active', true)

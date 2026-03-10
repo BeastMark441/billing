@@ -22,6 +22,7 @@ class TicketController extends Controller
         }
 
         $tickets = $query->paginate(10);
+
         return view('dashboard.tickets.index', compact('tickets', 'filter'));
     }
 
@@ -30,6 +31,7 @@ class TicketController extends Controller
         /** @var User $user */
         $user = Auth::user();
         $orders = $user->orders()->whereIn('status', ['active', 'suspended', 'failed'])->get();
+
         return view('dashboard.tickets.create', compact('orders'));
     }
 
@@ -47,9 +49,9 @@ class TicketController extends Controller
         ]);
 
         // Verify order belongs to user if provided
-        if (!empty($validated['order_id'])) {
+        if (! empty($validated['order_id'])) {
             $hasOrder = $user->orders()->where('id', $validated['order_id'])->exists();
-            if (!$hasOrder) {
+            if (! $hasOrder) {
                 return back()->withErrors(['order_id' => 'Выбранный заказ не найден.']);
             }
         }
