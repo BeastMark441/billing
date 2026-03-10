@@ -21,5 +21,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Event listeners are auto-discovered
+        \App\Models\Order::observe(\App\Observers\UserLogObserver::class);
+        \App\Models\Ticket::observe(\App\Observers\UserLogObserver::class);
+        \App\Models\TicketMessage::observe(\App\Observers\UserLogObserver::class);
     }
 }

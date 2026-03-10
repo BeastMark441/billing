@@ -42,6 +42,65 @@ class OrderController extends Controller
         return view('admin.orders.index', compact('orders'));
     }
 
+    public function create()
+    {
+        $users = \App\Models\User::orderBy('email')->get();
+        $services = \App\Models\InfrastructureService::where('is_active', true)->get();
+        return view('admin.orders.create', compact('users', 'services'));
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'infrastructure_service_id' => 'required|exists:infrastructure_services,id',
+            'expires_at' => 'nullable|date',
+            'payment_method' => 'required|in:free,balance',
+        ]);
+
+        $service = \App\Models\InfrastructureService::find($validated['infrastructure_service_id']);
+        $user = \App\Models\User::find($validated['user_id']);
+
+        // Check balance if method is balance
+        if ($validated['payment_method'] === 'balance') {
+            if ($user->balance < $service->price) {
+                return back()->with('error', 'У пользователя недостаточно средств на балансе.');
+            }
+            $user->decrement('balance', $service->price);
+            // Log transaction
+            $user->balanceLogs()->create([
+                'amount' => -$service->price,
+                'type' => 'purchase',
+                'description' => "Заказ услуги {$service->name} (Администратор)",
+            ]);
+        }
+
+        $order = Order::create([
+            'user_id' => $user->id,
+            'infrastructure_service_id' => $service->id,
+            'status' => 'pending',
+            'price' => $service->price,
+            'payload' => [],
+            'expires_at' => $validated['expires_at'],
+        ]);
+
+        // Provision immediately
+        try {
+            if (isset($service->specifications['egg_id'])) {
+                $this->pterodactylService->provisionServer($order);
+            }
+            // Mark as paid/active if provisioned or free
+            $order->update([
+                'status' => 'active', 
+                'paid_at' => now()
+            ]);
+            
+            return redirect()->route('admin.orders.show', $order)->with('success', 'Заказ успешно создан и отправлен на установку.');
+        } catch (\Exception $e) {
+            return redirect()->route('admin.orders.show', $order)->with('error', 'Заказ создан, но ошибка установки: ' . $e->getMessage());
+        }
+    }
+
     public function show(Order $order)
     {
         return view('admin.orders.show', compact('order'));

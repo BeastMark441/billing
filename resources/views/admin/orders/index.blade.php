@@ -6,6 +6,10 @@
         </div>
         
         <form method="GET" action="{{ route('admin.orders.index') }}" class="flex gap-2">
+            <a href="{{ route('admin.orders.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Создать заказ
+            </a>
             <select name="status" onchange="this.form.submit()" 
                     class="bg-[#0f0f13] border border-white/10 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
                 <option value="">Все статусы</option>

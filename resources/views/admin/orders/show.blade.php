@@ -2,7 +2,12 @@
     <div class="flex items-center justify-between mb-8">
         <div>
             <h1 class="text-3xl font-bold text-white mb-2">Заказ #{{ $order->id }}</h1>
-            <p class="text-gray-400">Управление заказом пользователя {{ $order->user->email }}</p>
+            <p class="text-gray-400">
+                Управление заказом пользователя 
+                <a href="{{ route('admin.users.edit', $order->user) }}" class="text-blue-400 hover:text-blue-300 underline">
+                    {{ $order->user->email }}
+                </a>
+            </p>
         </div>
         <a href="{{ route('admin.orders.index') }}" class="text-gray-400 hover:text-white transition-colors">
             &larr; Назад к списку
@@ -60,6 +65,15 @@
                             <input type="date" name="expires_at" id="expires_at" value="{{ $order->expires_at ? $order->expires_at->format('Y-m-d') : '' }}" 
                                    class="w-full bg-[#0a0a0f] border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
                         </div>
+
+                        <!-- Auto Renewal -->
+                        <div>
+                            <label for="auto_renewal" class="block text-sm font-medium text-gray-300 mb-2">Автопродление</label>
+                            <select name="auto_renewal" id="auto_renewal" class="w-full bg-[#0a0a0f] border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                <option value="1" {{ $order->auto_renewal ? 'selected' : '' }}>Включено</option>
+                                <option value="0" {{ !$order->auto_renewal ? 'selected' : '' }}>Выключено</option>
+                            </select>
+                        </div>
                     </div>
 
                     @if($order->status === 'failed' && $order->last_error)
@@ -111,6 +125,24 @@
                     </a>
                 </div>
                 @endif
+            </div>
+            <!-- Status History -->
+            <div class="bg-[#0f0f13] border border-white/5 rounded-2xl p-6">
+                <h3 class="text-lg font-bold text-white mb-4">История статусов</h3>
+                <div class="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                    @foreach($order->statusHistory as $history)
+                    <div class="flex gap-3">
+                        <div class="w-2 h-2 rounded-full mt-2 {{ $history->status_to === 'active' ? 'bg-green-500' : ($history->status_to === 'suspended' ? 'bg-yellow-500' : ($history->status_to === 'failed' ? 'bg-red-500' : 'bg-blue-500')) }}"></div>
+                        <div>
+                            <div class="text-sm text-white">Статус изменен на <span class="{{ $history->status_to === 'active' ? 'text-green-400' : 'text-gray-300' }}">{{ ucfirst($history->status_to) }}</span></div>
+                            <div class="text-xs text-gray-500">{{ $history->created_at->format('d.m.Y H:i') }}</div>
+                            @if($history->comment)
+                            <div class="text-xs text-gray-400 mt-1">{{ $history->comment }}</div>
+                            @endif
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
             </div>
         </div>
 

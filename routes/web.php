@@ -117,10 +117,12 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     // Orders Management
     Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class)->names([
         'index' => 'orders.index',
+        'create' => 'orders.create',
+        'store' => 'orders.store',
         'show' => 'orders.show',
         'update' => 'orders.update',
         'destroy' => 'orders.destroy',
-    ])->only(['index', 'show', 'update', 'destroy']);
+    ])->only(['index', 'create', 'store', 'show', 'update', 'destroy']);
     
     Route::post('orders/{order}/change-plan', [\App\Http\Controllers\Admin\OrderController::class, 'changePlan'])->name('orders.change-plan');
     Route::post('orders/{order}/refund', [\App\Http\Controllers\Admin\OrderController::class, 'refund'])->name('orders.refund');
