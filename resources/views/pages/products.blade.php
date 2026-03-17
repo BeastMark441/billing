@@ -1,61 +1,86 @@
 @extends('layouts.landing')
 
+@section('title', 'Каталог услуг — NODEUM')
+@section('description', 'Каталог услуг NODEUM: VDS/VPS, игровые решения, базы данных и другие сервисы. Актуальные тарифы и быстрый запуск.')
+
 @section('content')
 <section class="py-24 relative overflow-hidden">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div class="text-center mb-16">
-            <h1 class="text-4xl md:text-5xl font-bold mb-6">Наши <span class="text-[#a6cb40]">продукты</span></h1>
-            <p class="text-xl text-gray-400 max-w-2xl mx-auto">
-                Мы предлагаем широкий спектр хостинг-решений для любых задач. От простых сайтов до сложных игровых кластеров.
-            </p>
+        <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-12">
+            <div>
+                <h1 class="text-4xl md:text-5xl font-bold mb-4">Каталог <span class="text-[#a6cb40]">услуг</span></h1>
+                <p class="text-lg text-gray-400 max-w-2xl">Актуальные категории и тарифы подгружаются из панели управления.</p>
+            </div>
+            <div class="flex gap-3">
+                <a href="{{ route('pricing') }}" class="px-5 py-3 rounded-lg border border-white/15 hover:border-[#a6cb40]/50 hover:bg-white/5 text-white font-semibold transition-colors">Посмотреть цены</a>
+                <a href="{{ route('register') }}" class="px-5 py-3 rounded-lg bg-[#a6cb40] hover:bg-[#8eb330] text-[#0a0a0f] font-bold transition-colors shadow-[0_0_20px_rgba(166,203,64,0.25)]">Создать аккаунт</a>
+            </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <!-- VDS -->
-            <div class="bg-[#050508] border border-white/10 rounded-2xl p-8 hover:border-[#a6cb40]/50 transition-all">
-                <div class="w-14 h-14 bg-[#a6cb40]/10 rounded-xl flex items-center justify-center text-[#a6cb40] mb-6">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                </div>
-                <h3 class="text-2xl font-bold mb-4">VDS / VPS</h3>
-                <p class="text-gray-400 mb-6">Виртуальные серверы на базе KVM с NVMe дисками. Полная изоляция ресурсов.</p>
-                <ul class="space-y-3 mb-8 text-sm text-gray-300">
-                    <li class="flex items-center gap-2"><svg class="w-4 h-4 text-[#a6cb40]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> До 64 vCPU</li>
-                    <li class="flex items-center gap-2"><svg class="w-4 h-4 text-[#a6cb40]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> NVMe накопители</li>
-                    <li class="flex items-center gap-2"><svg class="w-4 h-4 text-[#a6cb40]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Защита от DDoS</li>
-                </ul>
-                <a href="#" class="block w-full text-center py-3 border border-white/20 rounded-lg hover:bg-[#a6cb40] hover:text-[#0a0a0f] hover:border-[#a6cb40] transition-colors font-bold">Выбрать тариф</a>
-            </div>
+        <div class="flex flex-wrap gap-2 mb-10">
+            <a href="{{ route('products') }}" class="px-4 py-2 rounded-full text-sm font-semibold border transition-colors {{ $selectedCategory ? 'border-white/10 text-gray-300 hover:bg-white/5' : 'border-[#a6cb40]/50 bg-[#a6cb40]/10 text-white' }}">Все</a>
+            @foreach($categories as $cat)
+                <a href="{{ route('products.category', $cat) }}" class="px-4 py-2 rounded-full text-sm font-semibold border transition-colors {{ $selectedCategory && $selectedCategory->id === $cat->id ? 'border-[#a6cb40]/50 bg-[#a6cb40]/10 text-white' : 'border-white/10 text-gray-300 hover:bg-white/5' }}">{{ $cat->name }}</a>
+            @endforeach
+        </div>
 
-            <!-- Game Hosting -->
-            <div class="bg-[#050508] border border-white/10 rounded-2xl p-8 hover:border-[#a6cb40]/50 transition-all">
-                <div class="w-14 h-14 bg-[#a6cb40]/10 rounded-xl flex items-center justify-center text-[#a6cb40] mb-6">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5z"></path></svg>
-                </div>
-                <h3 class="text-2xl font-bold mb-4">Игровой хостинг</h3>
-                <p class="text-gray-400 mb-6">Серверы для популярных игр с удобной панелью управления.</p>
-                <ul class="space-y-3 mb-8 text-sm text-gray-300">
-                    <li class="flex items-center gap-2"><svg class="w-4 h-4 text-[#a6cb40]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Minecraft, CS2, Rust</li>
-                    <li class="flex items-center gap-2"><svg class="w-4 h-4 text-[#a6cb40]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Низкий пинг</li>
-                    <li class="flex items-center gap-2"><svg class="w-4 h-4 text-[#a6cb40]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Автоустановка модов</li>
-                </ul>
-                <a href="#" class="block w-full text-center py-3 border border-white/20 rounded-lg hover:bg-[#a6cb40] hover:text-[#0a0a0f] hover:border-[#a6cb40] transition-colors font-bold">Выбрать игру</a>
-            </div>
+        @php
+            $list = $selectedCategory ? collect([$selectedCategory]) : $categories;
+        @endphp
 
-            <!-- Dedicated -->
-            <div class="bg-[#050508] border border-white/10 rounded-2xl p-8 hover:border-[#a6cb40]/50 transition-all">
-                <div class="w-14 h-14 bg-[#a6cb40]/10 rounded-xl flex items-center justify-center text-[#a6cb40] mb-6">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path></svg>
+        <div class="space-y-12">
+            @forelse($list as $cat)
+                @php
+                    $services = $cat->relationLoaded('services') ? $cat->services : $cat->services()->where('is_active', true)->orderBy('sort_order')->orderBy('price')->get();
+                @endphp
+
+                <div class="bg-[#050508] border border-white/10 rounded-2xl p-6 md:p-8">
+                    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white">{{ $cat->name }}</h2>
+                            @if($cat->description)
+                                <p class="text-sm text-gray-400 mt-1 max-w-2xl">{{ $cat->description }}</p>
+                            @endif
+                        </div>
+                        <a href="{{ route('products.category', $cat) }}" class="text-sm text-[#a6cb40] hover:underline">Открыть категорию</a>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        @forelse($services as $service)
+                            <div class="bg-[#0a0a0f] border border-white/10 rounded-xl p-5 hover:border-[#a6cb40]/40 transition-colors">
+                                <div class="flex items-start justify-between gap-4">
+                                    <div>
+                                        <h3 class="text-lg font-bold text-white leading-snug">{{ $service->name }}</h3>
+                                        @if($service->description)
+                                            <p class="text-sm text-gray-400 mt-2 line-clamp-3">{{ $service->description }}</p>
+                                        @endif
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-xs text-gray-400">от</div>
+                                        <div class="text-xl font-bold text-white">{{ number_format((float) $service->price, 0, '.', ' ') }} ₽</div>
+                                        <div class="text-xs text-gray-500">/ мес</div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-5 flex gap-3">
+                                    <a href="{{ route('products.service', [$cat, $service]) }}" class="flex-1 text-center px-4 py-2 rounded-lg border border-white/15 hover:bg-white/5 text-white text-sm font-semibold transition-colors">Подробнее</a>
+                                    @auth
+                                        <a href="{{ route('dashboard.infrastructure') }}" class="flex-1 text-center px-4 py-2 rounded-lg bg-[#a6cb40] hover:bg-[#8eb330] text-[#0a0a0f] text-sm font-bold transition-colors">Заказать</a>
+                                    @else
+                                        <a href="{{ route('register') }}" class="flex-1 text-center px-4 py-2 rounded-lg bg-[#a6cb40] hover:bg-[#8eb330] text-[#0a0a0f] text-sm font-bold transition-colors">Заказать</a>
+                                    @endauth
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-sm text-gray-500">В этой категории пока нет активных тарифов.</div>
+                        @endforelse
+                    </div>
                 </div>
-                <h3 class="text-2xl font-bold mb-4">Выделенные серверы</h3>
-                <p class="text-gray-400 mb-6">Мощные физические серверы для высоконагруженных проектов.</p>
-                <ul class="space-y-3 mb-8 text-sm text-gray-300">
-                    <li class="flex items-center gap-2"><svg class="w-4 h-4 text-[#a6cb40]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Intel & AMD EPYC</li>
-                    <li class="flex items-center gap-2"><svg class="w-4 h-4 text-[#a6cb40]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> До 1TB RAM</li>
-                    <li class="flex items-center gap-2"><svg class="w-4 h-4 text-[#a6cb40]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Индивидуальная сборка</li>
-                </ul>
-                <a href="#" class="block w-full text-center py-3 border border-white/20 rounded-lg hover:bg-[#a6cb40] hover:text-[#0a0a0f] hover:border-[#a6cb40] transition-colors font-bold">Конфигуратор</a>
-            </div>
+            @empty
+                <div class="bg-[#050508] border border-white/10 rounded-2xl p-10 text-center text-gray-400">Каталог пока пуст. Добавьте категории и тарифы в админ‑панели.</div>
+            @endforelse
         </div>
     </div>
 </section>
 @endsection
+

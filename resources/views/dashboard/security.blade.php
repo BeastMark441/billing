@@ -61,6 +61,100 @@
             </div>
         </section>
 
+        <section class="bg-[#050508] border border-white/10 rounded-xl p-6">
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5 text-[#a6cb40]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                Уведомления
+            </h3>
+
+            <form method="POST" action="{{ route('notifications.preferences.update') }}" class="space-y-4">
+                @csrf
+                <input type="hidden" name="notify_email" value="0">
+                <input type="hidden" name="notify_telegram" value="0">
+
+                <label class="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                    <div>
+                        <div class="text-sm font-medium text-white">Email</div>
+                        <div class="text-sm text-gray-400">Уведомления о ключевых действиях и оплатах</div>
+                    </div>
+                    <input type="checkbox" name="notify_email" value="1" class="h-5 w-5 rounded border-white/20 bg-transparent text-[#a6cb40] focus:ring-[#a6cb40]" {{ $user->notify_email ? 'checked' : '' }}>
+                </label>
+
+                <label class="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                    <div>
+                        <div class="text-sm font-medium text-white">Telegram</div>
+                        <div class="text-sm text-gray-400">Доступно после привязки Telegram</div>
+                    </div>
+                    <input type="checkbox" name="notify_telegram" value="1" class="h-5 w-5 rounded border-white/20 bg-transparent text-[#a6cb40] focus:ring-[#a6cb40]" {{ ($user->notify_telegram && $user->telegram_chat_id) ? 'checked' : '' }} {{ $user->telegram_chat_id ? '' : 'disabled' }}>
+                </label>
+
+                <div class="flex items-center justify-end">
+                    <button class="px-4 py-2 bg-[#a6cb40] hover:bg-[#8eb330] text-black rounded-md text-sm font-medium transition-colors">
+                        Сохранить
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <section class="bg-[#050508] border border-white/10 rounded-xl p-6">
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5 text-[#a6cb40]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"></path></svg>
+                Telegram
+            </h3>
+
+            @if($user->telegram_chat_id)
+                <div class="space-y-3">
+                    <div class="p-4 bg-white/5 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <div class="text-sm font-medium text-white">Статус</div>
+                            <div class="text-sm text-gray-400">Привязан</div>
+                        </div>
+                        <div class="text-xs text-gray-400 font-mono">chat_id: {{ $user->telegram_chat_id }}</div>
+                    </div>
+
+                    <form method="POST" action="{{ route('telegram.link.unlink') }}" class="flex justify-end">
+                        @csrf
+                        <button class="px-4 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-md text-sm font-medium transition-colors">
+                            Отвязать
+                        </button>
+                    </form>
+                </div>
+            @else
+                <div class="space-y-4">
+                    <div class="p-4 bg-white/5 rounded-lg">
+                        <div class="text-sm text-gray-300">Сгенерируйте код и откройте ссылку в Telegram.</div>
+                        @if($telegramLinkToken)
+                            <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div class="p-3 bg-black/30 border border-white/10 rounded-lg">
+                                    <div class="text-xs text-gray-400">Код</div>
+                                    <div class="mt-1 font-mono text-sm text-white break-all">{{ $telegramLinkToken }}</div>
+                                </div>
+                                <div class="p-3 bg-black/30 border border-white/10 rounded-lg">
+                                    <div class="text-xs text-gray-400">Ссылка</div>
+                                    <div class="mt-1 text-sm text-white break-all">
+                                        @if($telegramDeepLink)
+                                            <a href="{{ $telegramDeepLink }}" class="text-[#a6cb40] hover:underline" target="_blank" rel="noreferrer">{{ $telegramDeepLink }}</a>
+                                        @elseif($telegramBotUsername)
+                                            <span class="text-gray-400">Укажите TELEGRAM_BOT_USERNAME</span>
+                                        @else
+                                            <span class="text-gray-400">Укажите TELEGRAM_BOT_USERNAME</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+
+                    <form method="POST" action="{{ route('telegram.link.start') }}" class="flex justify-end">
+                        @csrf
+                        <button class="px-4 py-2 bg-[#a6cb40] hover:bg-[#8eb330] text-black rounded-md text-sm font-medium transition-colors">
+                            Сгенерировать код
+                        </button>
+                    </form>
+                </div>
+            @endif
+        </section>
+
         <!-- Activity Log Section -->
         <section class="bg-[#050508] border border-white/10 rounded-xl p-6">
             <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
@@ -81,25 +175,14 @@
                         @forelse($logs as $log)
                         <tr class="text-sm">
                             <td class="px-4 py-3 text-white">
-                                @if($log->action === 'login')
-                                    Вход в аккаунт
-                                @elseif($log->action === 'register')
-                                    Регистрация
-                                @elseif($log->action === 'password_reset')
-                                    Сброс пароля
-                                @elseif($log->action === 'password_update')
-                                    Смена пароля
-                                @elseif($log->action === 'email_update')
-                                    Смена Email
-                                @else
-                                    {{ $log->action }}
-                                @endif
-                                @if($log->details)
-                                    <div class="text-xs text-gray-500">{{ $log->details }}</div>
+                                {{ \App\Support\AuditPresenter::title($log) }}
+                                @php($subtitle = \App\Support\AuditPresenter::subtitle($log))
+                                @if($subtitle)
+                                    <div class="text-xs text-gray-500">{{ $subtitle }}</div>
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-gray-400 font-mono text-xs">
-                                {{ $log->ip_address }}
+                                {{ $log->ip_address ?: '—' }}
                             </td>
                             <td class="px-4 py-3 text-gray-400">
                                 {{ $log->created_at->format('d.m.Y H:i') }}

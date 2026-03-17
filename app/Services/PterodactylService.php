@@ -16,11 +16,24 @@ class PterodactylService
 
     protected $appApiKey;
 
+    protected bool $verifySsl;
+
     public function __construct()
     {
         $this->baseUrl = config('services.pterodactyl.url');
         $this->clientApiKey = config('services.pterodactyl.client_key');
         $this->appApiKey = config('services.pterodactyl.app_key');
+        $this->verifySsl = (bool) config('services.pterodactyl.verify_ssl', true);
+    }
+
+    protected function appRequest()
+    {
+        $req = Http::withToken($this->appApiKey)->acceptJson();
+        if (! $this->verifySsl) {
+            $req = $req->withoutVerifying();
+        }
+
+        return $req;
     }
 
     /**
@@ -93,9 +106,12 @@ class PterodactylService
         // For better UX, let's assume we fetch all nests and their eggs to find the match.
 
         $nestsResponse = Http::withToken($this->appApiKey)
-            ->withoutVerifying()
             ->acceptJson()
             ->get($this->baseUrl.'/api/application/nests?include=eggs');
+
+        if (! $this->verifySsl) {
+            $nestsResponse = $this->appRequest()->get($this->baseUrl.'/api/application/nests?include=eggs');
+        }
 
         if (! $nestsResponse->successful()) {
             return null;
@@ -123,9 +139,13 @@ class PterodactylService
         if ($user->pterodactyl_id) {
             // Validate if user really exists in Pterodactyl, if not, clear ID and recreate
             $response = Http::withToken($this->appApiKey)
-                ->withoutVerifying()
-                ->acceptJson()
-                ->get($this->baseUrl.'/api/application/users/'.$user->pterodactyl_id);
+                ->acceptJson();
+
+            if (! $this->verifySsl) {
+                $response = $response->withoutVerifying();
+            }
+
+            $response = $response->get($this->baseUrl.'/api/application/users/'.$user->pterodactyl_id);
 
             if ($response->successful()) {
                 return $user->pterodactyl_id;
@@ -137,11 +157,15 @@ class PterodactylService
 
         // Search by email first
         $response = Http::withToken($this->appApiKey)
-            ->withoutVerifying()
-            ->acceptJson()
-            ->get($this->baseUrl.'/api/application/users', [
-                'filter[email]' => $user->email,
-            ]);
+            ->acceptJson();
+
+        if (! $this->verifySsl) {
+            $response = $response->withoutVerifying();
+        }
+
+        $response = $response->get($this->baseUrl.'/api/application/users', [
+            'filter[email]' => $user->email,
+        ]);
 
         if ($response->successful() && ! empty($response['data'])) {
             $pterodactylUser = $response['data'][0]['attributes'];
@@ -153,16 +177,20 @@ class PterodactylService
         // Create new user
         $password = Str::random(16);
         $response = Http::withToken($this->appApiKey)
-            ->withoutVerifying()
-            ->acceptJson()
-            ->post($this->baseUrl.'/api/application/users', [
-                'email' => $user->email,
-                'username' => $this->generateUsername($user->name),
-                'first_name' => explode(' ', $user->name)[0],
-                'last_name' => explode(' ', $user->name)[1] ?? 'User',
-                'password' => $password,
-                'language' => 'en',
-            ]);
+            ->acceptJson();
+
+        if (! $this->verifySsl) {
+            $response = $response->withoutVerifying();
+        }
+
+        $response = $response->post($this->baseUrl.'/api/application/users', [
+            'email' => $user->email,
+            'username' => $this->generateUsername($user->name),
+            'first_name' => explode(' ', $user->name)[0],
+            'last_name' => explode(' ', $user->name)[1] ?? 'User',
+            'password' => $password,
+            'language' => 'en',
+        ]);
 
         if (! $response->successful()) {
             throw new Exception('Failed to create Pterodactyl user: '.$response->body());
@@ -247,9 +275,13 @@ class PterodactylService
         $page = 1;
         while ($page <= 5) { // Limit pages to prevent infinite loops
             $response = Http::withToken($this->appApiKey)
-                ->withoutVerifying()
-                ->acceptJson()
-                ->get($this->baseUrl."/api/application/nodes/{$nodeId}/allocations?page={$page}");
+                ->acceptJson();
+
+            if (! $this->verifySsl) {
+                $response = $response->withoutVerifying();
+            }
+
+            $response = $response->get($this->baseUrl."/api/application/nodes/{$nodeId}/allocations?page={$page}");
 
             if (! $response->successful()) {
                 // If we can't fetch allocations, maybe fallback or throw?
@@ -278,9 +310,13 @@ class PterodactylService
     protected function createPterodactylServer($data)
     {
         $response = Http::withToken($this->appApiKey)
-            ->withoutVerifying()
-            ->acceptJson()
-            ->post($this->baseUrl.'/api/application/servers', $data);
+            ->acceptJson();
+
+        if (! $this->verifySsl) {
+            $response = $response->withoutVerifying();
+        }
+
+        $response = $response->post($this->baseUrl.'/api/application/servers', $data);
 
         if (! $response->successful()) {
             throw new Exception('Failed to create server: '.$response->body());
@@ -292,9 +328,13 @@ class PterodactylService
     public function getServerDetails($serverId)
     {
         $response = Http::withToken($this->appApiKey)
-            ->withoutVerifying()
-            ->acceptJson()
-            ->get($this->baseUrl.'/api/application/servers/'.$serverId);
+            ->acceptJson();
+
+        if (! $this->verifySsl) {
+            $response = $response->withoutVerifying();
+        }
+
+        $response = $response->get($this->baseUrl.'/api/application/servers/'.$serverId);
 
         if (! $response->successful()) {
             return null;
@@ -306,9 +346,13 @@ class PterodactylService
     public function suspendServer($serverId)
     {
         $response = Http::withToken($this->appApiKey)
-            ->withoutVerifying()
-            ->acceptJson()
-            ->post($this->baseUrl.'/api/application/servers/'.$serverId.'/suspend');
+            ->acceptJson();
+
+        if (! $this->verifySsl) {
+            $response = $response->withoutVerifying();
+        }
+
+        $response = $response->post($this->baseUrl.'/api/application/servers/'.$serverId.'/suspend');
 
         if (! $response->successful()) {
             throw new Exception('Failed to suspend server: '.$response->body());
@@ -320,9 +364,13 @@ class PterodactylService
     public function unsuspendServer($serverId)
     {
         $response = Http::withToken($this->appApiKey)
-            ->withoutVerifying()
-            ->acceptJson()
-            ->post($this->baseUrl.'/api/application/servers/'.$serverId.'/unsuspend');
+            ->acceptJson();
+
+        if (! $this->verifySsl) {
+            $response = $response->withoutVerifying();
+        }
+
+        $response = $response->post($this->baseUrl.'/api/application/servers/'.$serverId.'/unsuspend');
 
         if (! $response->successful()) {
             throw new Exception('Failed to unsuspend server: '.$response->body());
@@ -334,9 +382,13 @@ class PterodactylService
     public function deleteServer($serverId)
     {
         $response = Http::withToken($this->appApiKey)
-            ->withoutVerifying()
-            ->acceptJson()
-            ->delete($this->baseUrl.'/api/application/servers/'.$serverId);
+            ->acceptJson();
+
+        if (! $this->verifySsl) {
+            $response = $response->withoutVerifying();
+        }
+
+        $response = $response->delete($this->baseUrl.'/api/application/servers/'.$serverId);
 
         if (! $response->successful()) {
             throw new Exception('Failed to delete server: '.$response->body());

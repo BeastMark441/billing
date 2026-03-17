@@ -33,4 +33,14 @@ class NotificationController extends Controller
 
         return back()->with('success', 'Все уведомления прочитаны.');
     }
+
+    public function destroy($id)
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $notification = $user->notifications()->findOrFail($id);
+        $notification->delete();
+
+        return back()->with('success', 'Уведомление удалено.');
+    }
 }

@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ProvisionPterodactylServer;
 use App\Models\InfrastructureService;
 use App\Models\Order;
+use App\Models\User;
+use App\Notifications\GeneralNotification;
+use App\Services\AuditLogger;
 use App\Services\PterodactylService;
 use Exception;
 use Illuminate\Http\Request;
@@ -13,7 +17,7 @@ class OrderController extends Controller
 {
     protected $pterodactylService;
 
-    public function __construct(PterodactylService $pterodactylService)
+    public function __construct(PterodactylService $pterodactylService, protected AuditLogger $auditLogger)
     {
         $this->pterodactylService = $pterodactylService;
     }
@@ -65,22 +69,39 @@ class OrderController extends Controller
             'payload' => $request->input('payload', []), // e.g. node selection
         ]);
 
+        $this->auditLogger->log('order_created', ['service_id' => $service->id, 'price' => (float) $service->price], 'order', (string) $order->id);
+
         // Simulate payment success immediately
         $order->update(['paid_at' => now(), 'status' => 'paid']);
 
-        // Trigger Provisioning
-        try {
-            // Check if service is "Panel" category (assuming category ID 1 or slug 'panel' or similar)
-            // Ideally we check $service->category->slug === 'panel' or similar
-            // For now, assume if it has 'egg_id' in specs, it's Pterodactyl
-            if (isset($service->specifications['egg_id'])) {
-                $this->pterodactylService->provisionServer($order);
-            }
+        $order->user->notify(new GeneralNotification(
+            'Заказ создан',
+            'Заказ #'.$order->id.' создан и оплачен. Начинаем подготовку услуги.',
+            'success',
+            route('orders.show', $order),
+            'Открыть заказ'
+        ));
 
-            return redirect()->route('orders.show', $order)->with('success', 'Заказ успешно создан и сервер установлен!');
-        } catch (Exception $e) {
-            return redirect()->route('orders.show', $order)->with('error', 'Заказ создан, но возникла ошибка при установке сервера: '.$e->getMessage());
+        $admins = User::where('role', 'admin')->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new GeneralNotification(
+                'Новый заказ',
+                'Создан новый заказ #'.$order->id.' ('.$service->name.').',
+                'info',
+                route('admin.orders.show', $order),
+                'Открыть заказ'
+            ));
         }
+
+        // Trigger Provisioning
+        if (isset($service->specifications['egg_id'])) {
+            $order->update(['status' => 'provisioning']);
+            ProvisionPterodactylServer::dispatch($order->id);
+
+            return redirect()->route('orders.show', $order)->with('success', 'Заказ создан. Сервер разворачивается, это может занять несколько минут.');
+        }
+
+        return redirect()->route('orders.show', $order)->with('success', 'Заказ успешно создан.');
     }
 
     public function toggleAutoRenewal(Order $order)
@@ -90,6 +111,8 @@ class OrderController extends Controller
         }
 
         $order->update(['auto_renewal' => ! $order->auto_renewal]);
+
+        $this->auditLogger->log('order_auto_renewal_toggled', ['enabled' => (bool) $order->auto_renewal], 'order', (string) $order->id);
 
         return back()->with('success', 'Настройка автопродления обновлена.');
     }
@@ -137,8 +160,20 @@ class OrderController extends Controller
                 $order->update(['status' => 'active']);
             }
 
+            $user->notify(new GeneralNotification(
+                'Услуга продлена',
+                'Заказ #'.$order->id.' продлен до '.$newExpiration->format('d.m.Y').'.',
+                'success',
+                route('orders.show', $order),
+                'Открыть заказ'
+            ));
+
+            $this->auditLogger->log('order_renewed', ['amount' => (float) $cost, 'expires_at' => $newExpiration->toAtomString()], 'order', (string) $order->id);
+
             return back()->with('success', 'Услуга успешно продлена до '.$newExpiration->format('d.m.Y'));
         } catch (Exception $e) {
+            $this->auditLogger->log('order_renew_failed', ['error' => $e->getMessage()], 'order', (string) $order->id, 'error');
+
             return back()->with('error', 'Ошибка продления: '.$e->getMessage());
         }
     }

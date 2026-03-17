@@ -34,6 +34,12 @@ class User extends Authenticatable
         'is_blocked',
         'blocked_until',
         'blocked_reason',
+        'pterodactyl_id',
+        'telegram_user_id',
+        'telegram_chat_id',
+        'telegram_linked_at',
+        'notify_email',
+        'notify_telegram',
     ];
 
     /**
@@ -60,6 +66,9 @@ class User extends Authenticatable
             'balance' => 'decimal:2',
             'is_blocked' => 'boolean',
             'blocked_until' => 'datetime',
+            'telegram_linked_at' => 'datetime',
+            'notify_email' => 'boolean',
+            'notify_telegram' => 'boolean',
         ];
     }
 
@@ -91,6 +100,11 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function routeNotificationForTelegram(): ?string
+    {
+        return $this->telegram_chat_id;
     }
 
     public function getFullNameAttribute()

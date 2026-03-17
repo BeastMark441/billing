@@ -2,11 +2,34 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\InfrastructureCategory;
+use App\Models\Order;
+use App\Models\TelegramLinkToken;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
+    public function index()
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        $recentActivity = AuditLog::where('user_id', $user->id)
+            ->where('action', 'not like', 'admin_%')
+            ->latest()
+            ->take(10)
+            ->get();
+
+        $recentOrders = $user->orders()->with('service')->latest()->take(5)->get();
+
+        return view('dashboard.overview', [
+            'user' => $user,
+            'recentActivity' => $recentActivity,
+            'recentOrders' => $recentOrders,
+        ]);
+    }
+
     /**
      * Display the account information page.
      */
@@ -24,15 +47,31 @@ class DashboardController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        $logs = $user->logs()
+
+        $logs = AuditLog::where('user_id', $user->id)
             ->where('action', 'not like', 'admin_%')
             ->latest()
             ->take(5)
             ->get();
 
+        $token = session('telegram_link_token');
+        if (! $token) {
+            $token = TelegramLinkToken::where('user_id', $user->id)
+                ->whereNull('used_at')
+                ->where('expires_at', '>', now())
+                ->latest()
+                ->value('token');
+        }
+
+        $botUsername = (string) config('services.telegram.bot_username');
+        $deepLink = $botUsername && $token ? "https://t.me/{$botUsername}?start={$token}" : null;
+
         return view('dashboard.security', [
             'user' => $user,
             'logs' => $logs,
+            'telegramLinkToken' => $token,
+            'telegramDeepLink' => $deepLink,
+            'telegramBotUsername' => $botUsername,
         ]);
     }
 
@@ -43,7 +82,8 @@ class DashboardController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        $logs = $user->logs()
+
+        $logs = AuditLog::where('user_id', $user->id)
             ->where('action', 'not like', 'admin_%')
             ->latest()
             ->paginate(20);

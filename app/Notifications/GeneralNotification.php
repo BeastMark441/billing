@@ -3,9 +3,11 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class GeneralNotification extends Notification
+class GeneralNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -38,7 +40,42 @@ class GeneralNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database']; // For now, only database. Email can be added later.
+        $channels = ['database'];
+
+        if (($notifiable->notify_email ?? false) === true) {
+            $channels[] = 'mail';
+        }
+
+        if (($notifiable->notify_telegram ?? false) === true && ($notifiable->telegram_chat_id ?? null)) {
+            $channels[] = \App\Notifications\Channels\TelegramChannel::class;
+        }
+
+        return $channels;
+    }
+
+    public function toMail(object $notifiable): MailMessage
+    {
+        $mail = (new MailMessage)
+            ->subject($this->title)
+            ->line($this->message);
+
+        if ($this->actionUrl && $this->actionText) {
+            $mail->action($this->actionText, $this->actionUrl);
+        }
+
+        return $mail;
+    }
+
+    public function toTelegram(object $notifiable): TelegramMessage
+    {
+        $lines = [$this->title, '', $this->message];
+
+        if ($this->actionUrl) {
+            $lines[] = '';
+            $lines[] = $this->actionUrl;
+        }
+
+        return new TelegramMessage(implode("\n", $lines));
     }
 
     /**

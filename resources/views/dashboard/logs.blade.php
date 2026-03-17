@@ -17,7 +17,7 @@
                         <tr class="text-xs text-gray-500 uppercase tracking-wider border-b border-white/5">
                             <th class="px-6 py-4 font-medium">Действие</th>
                             <th class="px-6 py-4 font-medium">Детали</th>
-                            <th class="px-6 py-4 font-medium">IP адрес / User Agent</th>
+                            <th class="px-6 py-4 font-medium">IP / Устройство</th>
                             <th class="px-6 py-4 font-medium">Дата</th>
                         </tr>
                     </thead>
@@ -25,29 +25,15 @@
                         @forelse($logs as $log)
                         <tr class="hover:bg-white/5 transition-colors">
                             <td class="px-6 py-4">
-                                <span class="text-white font-medium">
-                                    @if($log->action === 'login')
-                                        Вход в аккаунт
-                                    @elseif($log->action === 'register')
-                                        Регистрация
-                                    @elseif($log->action === 'password_reset')
-                                        Сброс пароля
-                                    @elseif($log->action === 'password_update')
-                                        Смена пароля
-                                    @elseif($log->action === 'email_update')
-                                        Смена Email
-                                    @else
-                                        {{ ucfirst(str_replace('_', ' ', $log->action)) }}
-                                    @endif
-                                </span>
+                                <span class="text-white font-medium">{{ \App\Support\AuditPresenter::title($log) }}</span>
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-400">
-                                {{ $log->details ?? '-' }}
+                                {{ \App\Support\AuditPresenter::subtitle($log) ?: '—' }}
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-400">
-                                <div class="font-mono text-xs text-white">{{ $log->ip_address }}</div>
+                                <div class="font-mono text-xs text-white">{{ $log->ip_address ?: '—' }}</div>
                                 <div class="text-xs opacity-50 truncate max-w-xs" title="{{ $log->user_agent }}">
-                                    {{ $log->user_agent }}
+                                    {{ $log->user_agent ?: '—' }}
                                 </div>
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-400 whitespace-nowrap">

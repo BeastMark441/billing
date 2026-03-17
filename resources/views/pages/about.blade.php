@@ -1,5 +1,8 @@
 @extends('layouts.landing')
 
+@section('title', 'О компании — NODEUM')
+@section('description', 'NODEUM — хостинг‑провайдер: надежная инфраструктура, поддержка 24/7, прозрачные цены.')
+
 @section('content')
 <section class="py-24 relative overflow-hidden">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">

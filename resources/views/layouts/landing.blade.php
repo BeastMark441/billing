@@ -3,7 +3,20 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>NODEUM - Professional Hosting Solutions</title>
+
+    <title>@yield('title', 'NODEUM — Хостинг и инфраструктура для проектов')</title>
+    <meta name="description" content="@yield('description', 'NODEUM — хостинг-решения: VDS/VPS, игровые серверы, базы данных. Быстрый запуск, прозрачные цены, поддержка 24/7.')">
+    <link rel="canonical" href="{{ url()->current() }}">
+
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="NODEUM">
+    <meta property="og:title" content="@yield('title', 'NODEUM — Хостинг и инфраструктура для проектов')">
+    <meta property="og:description" content="@yield('description', 'NODEUM — хостинг-решения: VDS/VPS, игровые серверы, базы данных. Быстрый запуск, прозрачные цены, поддержка 24/7.')">
+    <meta property="og:url" content="{{ url()->current() }}">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="@yield('title', 'NODEUM — Хостинг и инфраструктура для проектов')">
+    <meta name="twitter:description" content="@yield('description', 'NODEUM — хостинг-решения: VDS/VPS, игровые серверы, базы данных. Быстрый запуск, прозрачные цены, поддержка 24/7.')">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,6 +46,26 @@
         </script>
         <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     @endif
+
+    @include('partials.analytics')
+
+    <script type="application/ld+json">
+        {!! json_encode([
+            '@context' => 'https://schema.org',
+            '@type' => 'Organization',
+            'name' => 'NODEUM',
+            'url' => config('app.url'),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
+    </script>
+
+    <script type="application/ld+json">
+        {!! json_encode([
+            '@context' => 'https://schema.org',
+            '@type' => 'WebSite',
+            'name' => 'NODEUM',
+            'url' => config('app.url'),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
+    </script>
 </head>
 <body class="bg-[#0a0a0f] text-white font-sans antialiased min-h-screen flex flex-col">
 
@@ -139,7 +172,7 @@
     <!-- Footer -->
     <footer class="bg-[#050508] border-t border-white/5 py-12 mt-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-8">
                 <div class="col-span-1 md:col-span-1">
                     <div class="flex items-center gap-2 mb-4">
                         <svg class="w-6 h-6 text-[#a6cb40]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -150,6 +183,21 @@
                     <p class="text-gray-400 text-sm">
                         Надежные решения для вашего бизнеса и игровых проектов. VDS, хостинг, базы данных.
                     </p>
+
+                    <div class="mt-5">
+                        <div class="text-white font-semibold mb-3">Мы в соцсетях</div>
+                        <div class="flex flex-wrap gap-2 text-sm">
+                            @php
+                                $social = config('services.social');
+                            @endphp
+                            <a href="{{ $social['vk'] ?? '#' }}" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition-colors" target="_blank" rel="noreferrer">VK</a>
+                            <a href="{{ $social['max'] ?? '#' }}" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition-colors" target="_blank" rel="noreferrer">MAX</a>
+                            <a href="{{ $social['youtube'] ?? '#' }}" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition-colors" target="_blank" rel="noreferrer">YouTube</a>
+                            <a href="{{ $social['discord'] ?? '#' }}" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition-colors" target="_blank" rel="noreferrer">Discord</a>
+                            <a href="{{ $social['telegram'] ?? '#' }}" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition-colors" target="_blank" rel="noreferrer">Telegram</a>
+                            <a href="{{ $social['rutube'] ?? '#' }}" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition-colors" target="_blank" rel="noreferrer">RuTube</a>
+                        </div>
+                    </div>
                 </div>
                 <div>
                     <h3 class="text-white font-semibold mb-4">Продукты</h3>
@@ -163,16 +211,27 @@
                     <h3 class="text-white font-semibold mb-4">Компания</h3>
                     <ul class="space-y-2 text-sm text-gray-400">
                         <li><a href="{{ route('about') }}" class="hover:text-[#a6cb40]">О нас</a></li>
-                        <li><a href="{{ route('about') }}" class="hover:text-[#a6cb40]">Контакты</a></li>
-                        <li><a href="#" class="hover:text-[#a6cb40]">Блог</a></li>
+                        <li><a href="{{ route('contacts') }}" class="hover:text-[#a6cb40]">Контакты</a></li>
+                        <li><a href="{{ route('blog') }}" class="hover:text-[#a6cb40]">Блог</a></li>
                     </ul>
                 </div>
                 <div>
                     <h3 class="text-white font-semibold mb-4">Поддержка</h3>
                     <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="#" class="hover:text-[#a6cb40]">База знаний</a></li>
-                        <li><a href="{{ route('dashboard.status') }}" class="hover:text-[#a6cb40]">Статус серверов</a></li>
-                        <li><a href="#" class="hover:text-[#a6cb40]">API Документация</a></li>
+                        <li><a href="{{ route('knowledge-base') }}" class="hover:text-[#a6cb40]">База знаний</a></li>
+                        <li><a href="{{ route('status') }}" class="hover:text-[#a6cb40]">Статус серверов</a></li>
+                        <li><a href="{{ route('api-docs') }}" class="hover:text-[#a6cb40]">API Документация</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-white font-semibold mb-4">Документы</h3>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="{{ route('legal.doc', 'user-agreement') }}" class="hover:text-[#a6cb40]">Пользовательское соглашение</a></li>
+                        <li><a href="{{ route('legal.doc', 'service-rules') }}" class="hover:text-[#a6cb40]">Правила пользования</a></li>
+                        <li><a href="{{ route('legal.doc', 'offer') }}" class="hover:text-[#a6cb40]">Договор-оферта</a></li>
+                        <li><a href="{{ route('legal.doc', 'privacy') }}" class="hover:text-[#a6cb40]">Обработка данных</a></li>
+                        <li><a href="{{ route('legal.doc', 'cookies') }}" class="hover:text-[#a6cb40]">Cookies</a></li>
                     </ul>
                 </div>
             </div>
@@ -181,6 +240,8 @@
             </div>
         </div>
     </footer>
+
+    <x-cookie-consent />
 
 </body>
 </html>

@@ -1,5 +1,8 @@
 @extends('layouts.landing')
 
+@section('title', 'Готовые решения — NODEUM')
+@section('description', 'Готовые решения NODEUM для бизнеса, игр, корпоративных клиентов и медиа. Быстрый запуск и масштабирование.')
+
 @section('content')
 <section class="py-24 relative overflow-hidden">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -16,7 +19,7 @@
                 <div>
                     <h3 class="text-2xl font-bold mb-2">Для E-commerce</h3>
                     <p class="text-gray-400 mb-4">Высокоскоростной хостинг для интернет-магазинов. Оптимизировано для Magento, WooCommerce, Bitrix.</p>
-                    <a href="#" class="text-[#a6cb40] font-bold hover:underline">Подробнее -></a>
+                    <a href="{{ route('products') }}" class="text-[#a6cb40] font-bold hover:underline">Подробнее</a>
                 </div>
             </div>
 
@@ -25,7 +28,7 @@
                 <div>
                     <h3 class="text-2xl font-bold mb-2">Для разработчиков игр</h3>
                     <p class="text-gray-400 mb-4">Инфраструктура для размещения игровых серверов, баз данных и матчмейкинга.</p>
-                    <a href="#" class="text-[#a6cb40] font-bold hover:underline">Подробнее -></a>
+                    <a href="{{ route('products') }}" class="text-[#a6cb40] font-bold hover:underline">Подробнее</a>
                 </div>
             </div>
 
@@ -34,7 +37,7 @@
                 <div>
                     <h3 class="text-2xl font-bold mb-2">Корпоративным клиентам</h3>
                     <p class="text-gray-400 mb-4">Частные облака, VPN-решения и выделенная инфраструктура с SLA 99.99%.</p>
-                    <a href="#" class="text-[#a6cb40] font-bold hover:underline">Подробнее -></a>
+                    <a href="{{ route('products') }}" class="text-[#a6cb40] font-bold hover:underline">Подробнее</a>
                 </div>
             </div>
 
@@ -43,7 +46,7 @@
                 <div>
                     <h3 class="text-2xl font-bold mb-2">Стриминг и медиа</h3>
                     <p class="text-gray-400 mb-4">Серверы с каналом 10Gbps+ для трансляции видео и хранения большого объема данных.</p>
-                    <a href="#" class="text-[#a6cb40] font-bold hover:underline">Подробнее -></a>
+                    <a href="{{ route('products') }}" class="text-[#a6cb40] font-bold hover:underline">Подробнее</a>
                 </div>
             </div>
         </div>

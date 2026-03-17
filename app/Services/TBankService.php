@@ -65,7 +65,7 @@ class TBankService
         $params['Token'] = $this->generateToken($params);
 
         // Send JSON request
-        $response = Http::asJson()->post($this->baseUrl.'Init', $params);
+        $response = Http::asJson()->timeout(12)->retry(2, 250)->post($this->baseUrl.'Init', $params);
 
         if (! $response->successful() || ! $response->json('Success')) {
             Log::error('TBank Init Error', ['response' => $response->json(), 'payment_id' => $payment->id]);
@@ -96,7 +96,7 @@ class TBankService
 
         $params['Token'] = $this->generateToken($params);
 
-        $response = Http::post($this->baseUrl.'GetState', $params);
+        $response = Http::timeout(12)->retry(2, 250)->post($this->baseUrl.'GetState', $params);
 
         return $response->json();
     }
@@ -106,32 +106,33 @@ class TBankService
      */
     protected function generateToken(array $params)
     {
-        // 1. Remove optional params that are not part of token generation if they are arrays/objects
-        // T-Bank documentation: "В формировании токена участвуют все параметры, кроме Token"
-        // But specifically for objects like Receipt or DATA, they might be excluded or serialized.
-        // Usually Init request token is generated WITHOUT Receipt and DATA.
-
         $tokenParams = $params;
         unset($tokenParams['Token']);
-        unset($tokenParams['Receipt']);
-        unset($tokenParams['DATA']);
-
-        // Add password
         $tokenParams['Password'] = $this->password;
 
-        // Sort by key
         ksort($tokenParams);
 
-        // Concatenate values
         $values = '';
-        foreach ($tokenParams as $key => $value) {
-            // Only scalar values
-            if (! is_array($value) && ! is_object($value)) {
-                $values .= $value;
+        foreach ($tokenParams as $value) {
+            if (is_array($value) || is_object($value)) {
+                $values .= json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+                continue;
             }
+
+            if (is_bool($value)) {
+                $values .= $value ? 'true' : 'false';
+
+                continue;
+            }
+
+            if ($value === null) {
+                continue;
+            }
+
+            $values .= (string) $value;
         }
 
-        // SHA-256
         return hash('sha256', $values);
     }
 

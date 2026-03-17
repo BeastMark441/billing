@@ -20,29 +20,29 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <!-- Surname -->
             <div>
-                <x-input-label for="surname" :value="__('Фамилия')" class="text-gray-300" />
-                <x-text-input id="surname" name="surname" type="text" class="mt-1 block w-full bg-[#0a0a0f] border-white/10 text-white focus:border-[#a6cb40] focus:ring-[#a6cb40]" :value="old('surname', $user->surname)" placeholder="Иванов" autofocus autocomplete="family-name" />
+                <x-input-label for="surname" :value="__('Фамилия')" />
+                <x-text-input id="surname" name="surname" type="text" :value="old('surname', $user->surname)" placeholder="Иванов" autofocus autocomplete="family-name" />
                 <x-input-error class="mt-2" :messages="$errors->get('surname')" />
             </div>
 
             <!-- Name -->
             <div>
-                <x-input-label for="name" :value="__('Имя')" class="text-gray-300" />
-                <x-text-input id="name" name="name" type="text" class="mt-1 block w-full bg-[#0a0a0f] border-white/10 text-white focus:border-[#a6cb40] focus:ring-[#a6cb40]" :value="old('name', $user->name)" required placeholder="Иван" autocomplete="given-name" />
+                <x-input-label for="name" :value="__('Имя')" />
+                <x-text-input id="name" name="name" type="text" :value="old('name', $user->name)" required placeholder="Иван" autocomplete="given-name" />
                 <x-input-error class="mt-2" :messages="$errors->get('name')" />
             </div>
 
             <!-- Patronymic -->
             <div>
-                <x-input-label for="patronymic" :value="__('Отчество')" class="text-gray-300" />
-                <x-text-input id="patronymic" name="patronymic" type="text" class="mt-1 block w-full bg-[#0a0a0f] border-white/10 text-white focus:border-[#a6cb40] focus:ring-[#a6cb40]" :value="old('patronymic', $user->patronymic)" placeholder="Иванович" autocomplete="additional-name" />
+                <x-input-label for="patronymic" :value="__('Отчество')" />
+                <x-text-input id="patronymic" name="patronymic" type="text" :value="old('patronymic', $user->patronymic)" placeholder="Иванович" autocomplete="additional-name" />
                 <x-input-error class="mt-2" :messages="$errors->get('patronymic')" />
             </div>
         </div>
 
         <div>
-            <x-input-label for="email" :value="__('Email')" class="text-gray-300" />
-            <x-text-input id="email" name="email" type="email" class="mt-1 block w-full bg-[#0a0a0f] border-white/10 text-white focus:border-[#a6cb40] focus:ring-[#a6cb40]" :value="old('email', $user->email)" required placeholder="email@example.com" autocomplete="username" />
+            <x-input-label for="email" :value="__('Email')" />
+            <x-text-input id="email" name="email" type="email" :value="old('email', $user->email)" required placeholder="email@example.com" autocomplete="username" />
             <x-input-error class="mt-2" :messages="$errors->get('email')" />
 
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())

@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Notifications\GeneralNotification;
+use App\Jobs\ProcessTBankWebhookEvent;
+use App\Models\TBankWebhookEvent;
+use App\Services\AuditLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
     protected $tbankService;
 
-    public function __construct(\App\Services\TBankService $tbankService)
+    public function __construct(\App\Services\TBankService $tbankService, protected AuditLogger $auditLogger)
     {
         $this->tbankService = $tbankService;
     }
@@ -31,12 +34,16 @@ class PaymentController extends Controller
             'description' => 'Пополнение баланса',
         ]);
 
+        $this->auditLogger->log('payment_create', ['amount' => $validated['amount']], 'payment', (string) $payment->id);
+
         try {
             $url = $this->tbankService->init($payment);
 
             return redirect($url);
         } catch (\Exception $e) {
             $payment->update(['status' => 'error', 'payload' => ['error' => $e->getMessage()]]);
+
+            $this->auditLogger->log('payment_create_failed', ['error' => $e->getMessage()], 'payment', (string) $payment->id, 'error');
 
             return back()->with('error', 'Ошибка создания платежа: '.$e->getMessage());
         }
@@ -47,18 +54,23 @@ class PaymentController extends Controller
         // User redirected back from T-Bank
         // Usually we just show "Success" message, real status update comes via Webhook
         // But we can check status manually just in case
-        return redirect()->route('dashboard.billing.index')->with('success', 'Платеж обрабатывается. Баланс будет пополнен в ближайшее время.');
+        return redirect()->route('dashboard.billing')->with('success', 'Платеж обрабатывается. Баланс будет пополнен в ближайшее время.');
     }
 
     public function failed(Request $request)
     {
-        return redirect()->route('dashboard.billing.index')->with('error', 'Оплата не была завершена.');
+        return redirect()->route('dashboard.billing')->with('error', 'Оплата не была завершена.');
     }
 
     public function webhook(Request $request)
     {
         $data = $request->all();
-        \Illuminate\Support\Facades\Log::info('TBank Webhook', $data);
+
+        $sanitized = $data;
+        if (isset($sanitized['Token'])) {
+            $sanitized['Token'] = '***';
+        }
+        Log::info('TBank Webhook received', $sanitized);
 
         // Extract OrderId
         $orderId = $data['OrderId'] ?? null;
@@ -70,58 +82,45 @@ class PaymentController extends Controller
         // T-Bank sends Token in request. We need to verify it.
         // We MUST verify signature before processing money!
         if (! $this->tbankService->validateCallback($data)) {
-            \Illuminate\Support\Facades\Log::warning('TBank Webhook: Invalid Token', $data);
+            Log::warning('TBank Webhook: Invalid Token', $sanitized);
+
+            $eventHash = hash('sha256', json_encode($sanitized, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+            $event = TBankWebhookEvent::firstOrCreate(
+                ['event_hash' => $eventHash],
+                [
+                    'order_id' => $orderId,
+                    'provider_payment_id' => $data['PaymentId'] ?? null,
+                    'status' => $data['Status'] ?? null,
+                    'signature_valid' => false,
+                    'payload' => $sanitized,
+                ]
+            );
+
+            if (! $event->processed_at) {
+                $event->update([
+                    'processed_at' => now(),
+                    'process_result' => 'rejected',
+                    'error_message' => 'Invalid signature',
+                ]);
+            }
 
             return response('Invalid Token', 400);
         }
 
-        // Parse payment ID (e.g. 15_123456 -> 15)
-        $paymentId = explode('_', $orderId)[0];
-        $payment = \App\Models\Payment::find($paymentId);
+        $eventHash = hash('sha256', json_encode($sanitized, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        $event = TBankWebhookEvent::firstOrCreate(
+            ['event_hash' => $eventHash],
+            [
+                'order_id' => $orderId,
+                'provider_payment_id' => $data['PaymentId'] ?? null,
+                'status' => $data['Status'] ?? null,
+                'signature_valid' => true,
+                'payload' => $sanitized,
+            ]
+        );
 
-        if (! $payment) {
-            return response('Payment not found', 404);
-        }
-
-        $status = $data['Status'] ?? 'UNKNOWN';
-        $oldStatus = $payment->status;
-
-        // If payment is already confirmed, ignore (idempotency)
-        if ($oldStatus === 'confirmed') {
-            return response('OK', 200);
-        }
-
-        $payment->update([
-            'status' => strtolower($status),
-            'payment_id' => $data['PaymentId'] ?? $payment->payment_id,
-            'payload' => array_merge($payment->payload ?? [], ['webhook' => $data]),
-        ]);
-
-        if ($status === 'CONFIRMED') {
-            // Top up user balance
-            $payment->user->increment('balance', $payment->amount);
-
-            // Log balance transaction
-            // Use 'admin_deposit' or create new type 'deposit'
-            $payment->user->balanceLogs()->create([
-                'amount' => $payment->amount,
-                'type' => 'admin_deposit',
-                'description' => 'Пополнение баланса (T-Bank #'.$payment->id.')',
-            ]);
-
-            // Send Notification
-            $payment->user->notify(new GeneralNotification(
-                'Баланс пополнен',
-                'Ваш баланс успешно пополнен на '.number_format($payment->amount, 2).' ₽.',
-                'success',
-                route('dashboard.billing.index'),
-                'Перейти к финансам'
-            ));
-
-            \Illuminate\Support\Facades\Log::info("Payment #{$payment->id} confirmed via webhook. Balance updated.");
-        } elseif ($status === 'REJECTED' || $status === 'CANCELED') {
-            // Just log/update status (already done above)
-            \Illuminate\Support\Facades\Log::info("Payment #{$payment->id} failed/canceled via webhook.");
+        if (! $event->processed_at) {
+            ProcessTBankWebhookEvent::dispatch($event->id);
         }
 
         return response('OK', 200);

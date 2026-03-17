@@ -5,11 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\Ticket;
 use App\Models\TicketMessage;
 use App\Models\User;
+use App\Notifications\GeneralNotification;
+use App\Services\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class TicketController extends Controller
 {
+    public function __construct(protected AuditLogger $auditLogger) {}
+
     public function index(Request $request)
     {
         /** @var User $user */
@@ -64,6 +68,8 @@ class TicketController extends Controller
             'status' => 'open',
         ]);
 
+        $this->auditLogger->log('ticket_created', ['priority' => $validated['priority'], 'order_id' => $validated['order_id'] ?? null], 'ticket', (string) $ticket->id);
+
         // Create initial message entry
         $message = $ticket->messages()->create([
             'user_id' => $user->id,
@@ -81,6 +87,25 @@ class TicketController extends Controller
                     'file_size' => $file->getSize(),
                 ]);
             }
+        }
+
+        $user->notify(new GeneralNotification(
+            'Тикет создан',
+            'Тикет #'.$ticket->id.' создан. Мы ответим в ближайшее время.',
+            'success',
+            route('dashboard.tickets.show', $ticket),
+            'Открыть тикет'
+        ));
+
+        $admins = User::where('role', 'admin')->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new GeneralNotification(
+                'Новый тикет',
+                'Создан тикет #'.$ticket->id.' от '.$user->email.' ('.$ticket->subject.').',
+                'info',
+                route('admin.tickets.show', $ticket),
+                'Открыть тикет'
+            ));
         }
 
         return redirect()->route('dashboard.tickets.index')->with('success', 'Тикет успешно создан!');
@@ -113,6 +138,8 @@ class TicketController extends Controller
             'message' => $validated['message'],
         ]);
 
+        $this->auditLogger->log('ticket_reply', ['ticket_id' => $ticket->id], 'ticket', (string) $ticket->id);
+
         if ($request->hasFile('attachments')) {
             foreach ($request->file('attachments') as $file) {
                 $path = $file->store('tickets', 'public');
@@ -128,6 +155,17 @@ class TicketController extends Controller
         // Automatically set status to open if user replies
         if ($ticket->status !== 'open') {
             $ticket->update(['status' => 'open']);
+        }
+
+        $admins = User::where('role', 'admin')->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new GeneralNotification(
+                'Ответ в тикете',
+                'Пользователь ответил в тикете #'.$ticket->id.' ('.$ticket->subject.').',
+                'info',
+                route('admin.tickets.show', $ticket),
+                'Открыть тикет'
+            ));
         }
 
         return back()->with('success', 'Ответ отправлен.');

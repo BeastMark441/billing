@@ -16,10 +16,10 @@
                 От игровых серверов до мощных VDS и облачных решений. NODEUM — это профессиональный хостинг с низким пингом, высокой доступностью и мгновенной поддержкой.
             </p>
             <div class="flex flex-wrap gap-4">
-                <a href="#" class="bg-[#a6cb40] hover:bg-[#8eb330] text-[#0a0a0f] px-8 py-4 rounded-lg font-bold text-lg transition-all shadow-[0_0_20px_rgba(166,203,64,0.3)]">
+                <a href="{{ route('products') }}" class="bg-[#a6cb40] hover:bg-[#8eb330] text-[#0a0a0f] px-8 py-4 rounded-lg font-bold text-lg transition-all shadow-[0_0_20px_rgba(166,203,64,0.3)]">
                     Выбрать решение
                 </a>
-                <a href="#" class="border border-white/20 hover:border-[#a6cb40]/50 hover:bg-white/5 text-white px-8 py-4 rounded-lg font-bold text-lg transition-all">
+                <a href="{{ route('pricing') }}" class="border border-white/20 hover:border-[#a6cb40]/50 hover:bg-white/5 text-white px-8 py-4 rounded-lg font-bold text-lg transition-all">
                     Посмотреть цены
                 </a>
             </div>
@@ -45,7 +45,7 @@
                 <p class="text-gray-400 text-sm mb-6 leading-relaxed">
                     Высокопроизводительные виртуальные серверы на NVMe дисках. Полный root-доступ и гибкая настройка под ваши задачи.
                 </p>
-                <a href="#" class="text-[#a6cb40] font-semibold text-sm flex items-center gap-2 group/link">
+                <a href="{{ route('products') }}" class="text-[#a6cb40] font-semibold text-sm flex items-center gap-2 group/link">
                     Подробнее 
                     <svg class="w-4 h-4 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                 </a>
@@ -60,7 +60,7 @@
                 <p class="text-gray-400 text-sm mb-6 leading-relaxed">
                     Специализированный хостинг для Minecraft, CS2, Rust и других игр. Низкий пинг, защита от DDoS и удобная панель.
                 </p>
-                <a href="#" class="text-[#a6cb40] font-semibold text-sm flex items-center gap-2 group/link">
+                <a href="{{ route('products') }}" class="text-[#a6cb40] font-semibold text-sm flex items-center gap-2 group/link">
                     Подробнее 
                     <svg class="w-4 h-4 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                 </a>
@@ -75,7 +75,7 @@
                 <p class="text-gray-400 text-sm mb-6 leading-relaxed">
                     Быстрый хостинг для ваших сайтов на PHP/Node.js. Бесплатные SSL, автоматические бэкапы и удобная установка CMS.
                 </p>
-                <a href="#" class="text-[#a6cb40] font-semibold text-sm flex items-center gap-2 group/link">
+                <a href="{{ route('products') }}" class="text-[#a6cb40] font-semibold text-sm flex items-center gap-2 group/link">
                     Подробнее 
                     <svg class="w-4 h-4 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                 </a>
@@ -90,7 +90,7 @@
                 <p class="text-gray-400 text-sm mb-6 leading-relaxed">
                     Управляемые базы данных MySQL, PostgreSQL, Redis. Гарантированная сохранность данных и высокая скорость работы.
                 </p>
-                <a href="#" class="text-[#a6cb40] font-semibold text-sm flex items-center gap-2 group/link">
+                <a href="{{ route('products') }}" class="text-[#a6cb40] font-semibold text-sm flex items-center gap-2 group/link">
                     Подробнее 
                     <svg class="w-4 h-4 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                 </a>
@@ -105,7 +105,7 @@
                 <p class="text-gray-400 text-sm mb-6 leading-relaxed">
                     Качественные серверы TeamSpeak 3 и Mumble. Стабильная связь без задержек для вашей команды или сообщества.
                 </p>
-                <a href="#" class="text-[#a6cb40] font-semibold text-sm flex items-center gap-2 group/link">
+                <a href="{{ route('products') }}" class="text-[#a6cb40] font-semibold text-sm flex items-center gap-2 group/link">
                     Подробнее 
                     <svg class="w-4 h-4 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                 </a>
@@ -120,7 +120,7 @@
                 <p class="text-gray-400 text-sm mb-6 leading-relaxed">
                     Профессиональные почтовые ящики на вашем домене. Защита от спама, веб-интерфейс и поддержка IMAP/SMTP.
                 </p>
-                <a href="#" class="text-[#a6cb40] font-semibold text-sm flex items-center gap-2 group/link">
+                <a href="{{ route('products') }}" class="text-[#a6cb40] font-semibold text-sm flex items-center gap-2 group/link">
                     Подробнее 
                     <svg class="w-4 h-4 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                 </a>
@@ -178,15 +178,69 @@
 <!-- Call to Action -->
 <section class="py-20">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="bg-gradient-to-r from-[#a6cb40] to-[#8eb330] rounded-[2rem] p-12 text-center text-[#0a0a0f]">
-            <h2 class="text-4xl font-bold mb-6">Готовы начать?</h2>
-            <p class="text-lg font-medium mb-10 opacity-90 max-w-2xl mx-auto">
-                Запустите свой проект на профессиональном оборудовании уже сегодня. 
-                Простая настройка и выгодные тарифы ждут вас.
-            </p>
-            <a href="#" class="bg-[#0a0a0f] text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-black transition-all shadow-xl">
-                Создать аккаунт
-            </a>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+            <div>
+                <h2 class="text-4xl font-bold mb-5 leading-tight">Быстрая регистрация</h2>
+                <p class="text-lg text-gray-400 leading-relaxed max-w-xl">
+                    Создайте аккаунт за минуту и получите доступ к заказам, оплате и поддержке.
+                </p>
+                <div class="mt-8 flex flex-wrap gap-3">
+                    <a href="{{ route('products') }}" class="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold transition-colors">Каталог услуг</a>
+                    <a href="{{ route('pricing') }}" class="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold transition-colors">Цены</a>
+                </div>
+            </div>
+
+            <div class="relative">
+                <div class="absolute -inset-6 bg-[#a6cb40]/20 rounded-[2.5rem] blur-2xl"></div>
+                <div class="relative bg-white text-[#0a0a0f] rounded-[2rem] p-8 md:p-10 shadow-2xl">
+                    <form method="POST" action="{{ route('register') }}" x-data="{ email: '{{ old('email') }}', password: '', show: false }" @submit="if (!email) return;">
+                        @csrf
+                        <input type="hidden" name="name" :value="(email || '').split('@')[0] || 'Пользователь'" />
+                        <input type="hidden" name="password_confirmation" :value="password" />
+
+                        <div>
+                            <label for="quick_email" class="block text-sm font-medium text-gray-700">Электронная почта</label>
+                            <input id="quick_email" name="email" type="email" required autocomplete="username" x-model="email" class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-[#0a0a0f] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#a6cb40]/30 focus:border-[#a6cb40]" placeholder="email@example.com" />
+                            @error('email')
+                                <div class="mt-2 text-sm text-red-600">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mt-5">
+                            <div class="flex items-center justify-between gap-3">
+                                <label for="quick_password" class="block text-sm font-medium text-gray-700">Придумайте пароль</label>
+                                <button type="button" class="text-sm font-medium text-gray-600 hover:text-[#0a0a0f] underline" @click="password = (Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)).slice(0, 14)">Сгенерировать</button>
+                            </div>
+                            <div class="relative mt-2">
+                                <input id="quick_password" name="password" :type="show ? 'text' : 'password'" required autocomplete="new-password" x-model="password" class="w-full rounded-xl border border-gray-200 px-4 py-3 pr-12 text-sm text-[#0a0a0f] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#a6cb40]/30 focus:border-[#a6cb40]" placeholder="" />
+                                <button type="button" class="absolute inset-y-0 right-0 px-4 text-gray-500 hover:text-gray-700" @click="show = !show" aria-label="Показать пароль">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                </button>
+                            </div>
+                            @error('password')
+                                <div class="mt-2 text-sm text-red-600">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mt-5 flex items-start gap-3">
+                            <input id="quick_news" name="newsletter_consent" type="checkbox" class="mt-1 h-4 w-4 rounded border-gray-300 text-[#0a0a0f] focus:ring-[#a6cb40]/30" />
+                            <label for="quick_news" class="text-sm text-gray-700">Я подтверждаю свое согласие на получение новостных рассылок</label>
+                        </div>
+
+                        <button type="submit" class="mt-6 w-full rounded-xl bg-[#0e2235] hover:bg-[#0b1c2d] text-white font-bold py-3.5 transition-colors">Создать аккаунт</button>
+
+                        <div class="mt-4 text-xs text-gray-600 leading-relaxed">
+                            Регистрируясь, вы соглашаетесь на обработку персональных данных в соответствии с
+                            <a href="{{ route('legal.doc', 'privacy') }}" class="text-gray-800 underline hover:text-black">политикой</a>.
+                        </div>
+
+                        <div class="mt-6 text-center text-sm text-gray-700">
+                            Есть аккаунт?
+                            <a href="{{ route('login') }}" class="font-bold text-[#0e2235] hover:underline">Войти</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </section>

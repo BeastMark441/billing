@@ -39,12 +39,28 @@ return [
         'url' => env('PTERODACTYL_URL'),
         'client_key' => env('PTERODACTYL_CLIENT_KEY'),
         'app_key' => env('PTERODACTYL_APP_KEY'),
+        'verify_ssl' => env('PTERODACTYL_VERIFY_SSL', true),
     ],
 
     'tbank' => [
         'terminal_key' => env('TBANK_TERMINAL_KEY'),
         'password' => env('TBANK_PASSWORD'),
         'url' => env('TBANK_API_URL', 'https://securepay.tinkoff.ru/v2/'),
+    ],
+
+    'telegram' => [
+        'bot_token' => env('TELEGRAM_BOT_TOKEN'),
+        'bot_username' => env('TELEGRAM_BOT_USERNAME'),
+        'webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET'),
+    ],
+
+    'social' => [
+        'vk' => env('SOCIAL_VK_URL'),
+        'max' => env('SOCIAL_MAX_URL'),
+        'youtube' => env('SOCIAL_YOUTUBE_URL'),
+        'discord' => env('SOCIAL_DISCORD_URL'),
+        'telegram' => env('SOCIAL_TELEGRAM_URL'),
+        'rutube' => env('SOCIAL_RUTUBE_URL'),
     ],
 
 ];

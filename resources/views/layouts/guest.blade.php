@@ -33,6 +33,7 @@
                     }
                 }
             </script>
+            <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
         @endif
     </head>
     <body class="font-sans text-gray-100 antialiased bg-[#0a0a0f]">
@@ -57,5 +58,7 @@
                 {{ $slot }}
             </div>
         </div>
+
+        <x-cookie-consent />
     </body>
 </html>

@@ -5,12 +5,16 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Ticket;
 use App\Models\TicketMessage;
+use App\Notifications\GeneralNotification;
+use App\Services\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class TicketController extends Controller
 {
+    public function __construct(protected AuditLogger $auditLogger) {}
+
     /**
      * Display a listing of the resource.
      */
@@ -41,7 +45,20 @@ class TicketController extends Controller
             'priority' => 'required|in:low,medium,high',
         ]);
 
+        $before = $ticket->only(['status', 'priority']);
         $ticket->update($validated);
+
+        $this->auditLogger->log('admin_ticket_updated', ['from' => $before, 'to' => $validated], 'ticket', (string) $ticket->id);
+
+        if ($before['status'] !== $validated['status']) {
+            $ticket->user->notify(new GeneralNotification(
+                'Статус тикета изменен',
+                'Тикет #'.$ticket->id.' теперь имеет статус: '.$validated['status'].'.',
+                'info',
+                route('dashboard.tickets.show', $ticket),
+                'Открыть тикет'
+            ));
+        }
 
         return back()->with('success', 'Ticket updated successfully.');
     }
@@ -77,6 +94,16 @@ class TicketController extends Controller
         if ($ticket->status !== 'closed') {
             $ticket->update(['status' => 'pending']);
         }
+
+        $this->auditLogger->log('admin_ticket_reply', ['ticket_id' => $ticket->id], 'ticket', (string) $ticket->id);
+
+        $ticket->user->notify(new GeneralNotification(
+            'Ответ поддержки',
+            'В тикете #'.$ticket->id.' есть новый ответ.',
+            'info',
+            route('dashboard.tickets.show', $ticket),
+            'Открыть тикет'
+        ));
 
         return back()->with('success', 'Reply sent successfully.');
     }

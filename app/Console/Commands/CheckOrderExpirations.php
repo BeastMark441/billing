@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Order;
 use App\Notifications\GeneralNotification;
+use App\Services\AuditLogger;
 use App\Services\PterodactylService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -27,7 +28,7 @@ class CheckOrderExpirations extends Command
     /**
      * Execute the console command.
      */
-    public function handle(PterodactylService $pterodactylService)
+    public function handle(PterodactylService $pterodactylService, AuditLogger $auditLogger)
     {
         $now = Carbon::now();
         $this->info("Checking expirations at {$now}...");
@@ -65,6 +66,8 @@ class CheckOrderExpirations extends Command
                     $newExpiration = $order->expires_at->copy()->addMonth();
                     $order->update(['expires_at' => $newExpiration]);
 
+                    $auditLogger->log('order_auto_renewed', ['order_id' => $order->id, 'amount' => (float) $cost], 'order', (string) $order->id);
+
                     $this->info("Order #{$order->id} renewed until {$newExpiration}.");
 
                     // Notify User
@@ -77,6 +80,7 @@ class CheckOrderExpirations extends Command
                     ));
                 } catch (\Exception $e) {
                     $this->error("Failed to auto-renew Order #{$order->id}: ".$e->getMessage());
+                    $auditLogger->log('order_auto_renew_failed', ['order_id' => $order->id, 'error' => $e->getMessage()], 'order', (string) $order->id, 'error');
                 }
             } else {
                 $this->warn("User {$user->email} has insufficient funds for auto-renewal of Order #{$order->id}. Balance: {$user->balance}, Cost: {$cost}");
@@ -118,6 +122,7 @@ class CheckOrderExpirations extends Command
                 // BUT we should catch "Server Not Found" and still suspend local order.
 
                 $order->update(['status' => 'suspended']);
+                $auditLogger->log('order_suspended', ['order_id' => $order->id, 'reason' => 'expired'], 'order', (string) $order->id, 'warning');
                 $this->info("Order #{$order->id} status updated to 'suspended'.");
 
                 // Notify User
@@ -131,6 +136,7 @@ class CheckOrderExpirations extends Command
 
             } catch (\Exception $e) {
                 $this->error("Failed to suspend Order #{$order->id}: ".$e->getMessage());
+                $auditLogger->log('order_suspend_failed', ['order_id' => $order->id, 'error' => $e->getMessage()], 'order', (string) $order->id, 'error');
 
                 // If server 404s, it might be already deleted. We should probably mark order suspended/cancelled?
                 // For safety, we log error and don't update status so admin can check.
@@ -160,6 +166,8 @@ class CheckOrderExpirations extends Command
                     'server_port' => null,
                 ]);
 
+                $auditLogger->log('order_terminated', ['order_id' => $order->id], 'order', (string) $order->id, 'warning');
+
                 // Notify User
                 $order->user->notify(new GeneralNotification(
                     'Услуга удалена',
@@ -169,6 +177,7 @@ class CheckOrderExpirations extends Command
 
             } catch (\Exception $e) {
                 $this->error("Failed to terminate Order #{$order->id}: ".$e->getMessage());
+                $auditLogger->log('order_terminate_failed', ['order_id' => $order->id, 'error' => $e->getMessage()], 'order', (string) $order->id, 'error');
             }
         }
 

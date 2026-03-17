@@ -11,6 +11,7 @@ class Payment extends Model
         'payment_id',
         'amount',
         'status',
+        'credited_at',
         'payment_url',
         'payload',
         'description',
@@ -19,6 +20,7 @@ class Payment extends Model
     protected $casts = [
         'amount' => 'decimal:2',
         'payload' => 'array',
+        'credited_at' => 'datetime',
     ];
 
     public function user()

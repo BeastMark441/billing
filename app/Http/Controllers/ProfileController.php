@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\UserLog;
+use App\Notifications\GeneralNotification;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,6 +14,8 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
+    public function __construct(protected AuditLogger $auditLogger) {}
+
     /**
      * Display the user's profile form.
      */
@@ -28,6 +32,9 @@ class ProfileController extends Controller
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $user = $request->user();
+
+        $beforeEmail = $user->email;
+
         $user->fill($request->validated());
 
         if ($user->isDirty('email')) {
@@ -42,9 +49,19 @@ class ProfileController extends Controller
                 'user_agent' => $request->userAgent(),
                 'details' => 'Email updated',
             ]);
+
+            $this->auditLogger->log('profile_email_changed', ['from' => $beforeEmail, 'to' => $user->email], 'user', (string) $user->id, 'warning');
+
+            $user->notify(new GeneralNotification(
+                'Смена Email',
+                'Email был изменен. Если это были не вы, срочно смените пароль и обратитесь в поддержку.',
+                'warning'
+            ));
         }
 
         $user->save();
+
+        $this->auditLogger->log('profile_updated', array_keys($request->validated()), 'user', (string) $user->id);
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }

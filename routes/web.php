@@ -10,6 +10,9 @@ use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SeoController;
+use App\Http\Controllers\TelegramIntegrationController;
+use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\TicketController;
 use Illuminate\Support\Facades\Route;
 
@@ -17,11 +20,24 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
+Route::get('/robots.txt', [SeoController::class, 'robots'])->name('robots');
+
 // Static Pages
 Route::get('/products', [PageController::class, 'products'])->name('products');
+Route::get('/products/{category:slug}', [PageController::class, 'productCategory'])->name('products.category');
+Route::get('/products/{category:slug}/{service:slug}', [PageController::class, 'productService'])->name('products.service');
 Route::get('/solutions', [PageController::class, 'solutions'])->name('solutions');
 Route::get('/pricing', [PageController::class, 'pricing'])->name('pricing');
 Route::get('/about', [PageController::class, 'about'])->name('about');
+Route::get('/contacts', [PageController::class, 'contacts'])->name('contacts');
+Route::get('/blog', [PageController::class, 'blog'])->name('blog');
+Route::get('/status', [PageController::class, 'status'])->name('status');
+Route::get('/knowledge-base', [PageController::class, 'knowledgeBase'])->name('knowledge-base');
+Route::get('/api-docs', [PageController::class, 'apiDocs'])->name('api-docs');
+
+Route::get('/legal', [PageController::class, 'legal'])->name('legal');
+Route::get('/legal/{doc}', [PageController::class, 'legalDoc'])->name('legal.doc');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -30,10 +46,14 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'account'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/account', [DashboardController::class, 'account'])->name('dashboard.account');
     Route::get('/dashboard/security', [DashboardController::class, 'security'])->name('dashboard.security');
     Route::get('/dashboard/security/logs', [DashboardController::class, 'logs'])->name('dashboard.logs');
+
+    Route::post('/dashboard/security/telegram/link', [TelegramIntegrationController::class, 'startLink'])->name('telegram.link.start');
+    Route::post('/dashboard/security/telegram/unlink', [TelegramIntegrationController::class, 'unlink'])->name('telegram.link.unlink');
+    Route::post('/dashboard/security/notifications', [TelegramIntegrationController::class, 'updatePreferences'])->name('notifications.preferences.update');
     Route::get('/dashboard/infrastructure', [DashboardController::class, 'infrastructure'])->name('dashboard.infrastructure');
 
     // Billing
@@ -59,6 +79,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::delete('/notifications/{id}', [\App\Http\Controllers\NotificationController::class, 'destroy'])->name('notifications.delete');
 
     // Orders
     Route::resource('orders', \App\Http\Controllers\OrderController::class)->only(['index', 'show']);
@@ -74,6 +95,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 Route::post('/payments/webhook', [\App\Http\Controllers\PaymentController::class, 'webhook'])->name('payments.webhook');
+Route::post('/telegram/webhook', TelegramWebhookController::class)->name('telegram.webhook');
 
 // Admin Routes
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
