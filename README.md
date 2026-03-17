@@ -52,6 +52,25 @@
     PTERODACTYL_APP_KEY=your_application_api_key
     ```
 
+    Дополнительно (платежи / чеки / админ-доступ):
+    ```env
+    TBANK_TERMINAL_KEY=
+    TBANK_PASSWORD=
+    TBANK_API_URL=https://securepay.tinkoff.ru/v2/
+    TBANK_WEBHOOK_URL=https://yourdomain.com/payments/webhook
+
+    ORG_NAME=NODEUM
+    ORG_SITE=https://yourdomain.com
+    ORG_INN=
+    ORG_KPP=
+    ORG_ADDRESS=""
+    ORG_PHONE=""
+    ORG_EMAIL=""
+
+    SUPER_ADMIN_USER_IDS=1,2
+    SUPER_ADMIN_EMAILS=
+    ```
+
 4.  **Генерация ключа приложения**
     ```bash
     php artisan key:generate
@@ -68,9 +87,16 @@
     ```
 
 7.  **Настройка cron-задания**
-    Добавьте следующую cron-запись, чтобы плановые задачи (например, проверка истечения срока) выполнялись:
+    В проекте есть команды для периодического запуска. Их можно повесить на cron вручную (или добавить в scheduler на вашей стороне):
     ```bash
-    * * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1
+    # проверка истечения / автопродления
+    0 * * * * cd /path-to-your-project && php artisan billing:check-expirations
+
+    # синхронизация статусов с Pterodactyl
+    */10 * * * * cd /path-to-your-project && php artisan billing:sync-status
+
+    # дожим pending платежей T-Bank (полезно, если вебхук недоступен)
+    */5 * * * * cd /path-to-your-project && php artisan payments:reconcile-tbank --minutes=5 --limit=50
     ```
 
 ### После установки
@@ -85,6 +111,11 @@
 *   [📘 Руководство пользователя](docs/USER_GUIDE.md) — как зарегистрироваться, заказать сервер и управлять услугами.
 *   [🛡️ Руководство администратора](docs/ADMIN_GUIDE.md) — управление пользователями, тарифами и заказами.
 *   [💻 Руководство разработчика](docs/DEVELOPER_GUIDE.md) — архитектура, API и планы по развитию.
+
+Дополнительно:
+*   [💳 Платежи T-Bank](docs/PAYMENTS_TBANK.md)
+*   [🧾 Чеки (PDF/Email/публичная ссылка)](docs/RECEIPTS.md)
+*   [🧰 Логи / аудит / очистка](docs/LOGS_AND_AUDIT.md)
 
 ## Лицензия и предупреждение об использовании
 

@@ -16,25 +16,31 @@
 
 ## Стек Технологий
 
-*   **Backend**: Laravel 11.x (PHP 8.2+)
+*   **Backend**: Laravel 12.x (PHP 8.2+)
 *   **Frontend**: Blade Templates + Tailwind CSS + Alpine.js
 *   **Database**: MySQL / MariaDB
 *   **API Client**: Guzzle HTTP (через Laravel Http Facade)
-*   **Queue**: Database / Redis (на данный момент `sync`)
+*   **Queue**: поддерживается (database/redis). В критических местах (webhook T‑Bank) обработка синхронная.
 *   **Auth**: Laravel Breeze (Blade)
+*   **PDF**: dompdf/dompdf
+*   **QR**: endroid/qr-code
 
 ## Архитектура Проекта
 
 Проект следует стандартной MVC архитектуре Laravel с выделением бизнес-логики в сервисы.
 
 ### Модели (Models)
-*   `User`: Пользователь системы. Имеет баланс (`decimal`), роль (`is_admin`), статус блокировки.
+*   `User`: Пользователь системы. Имеет баланс (`decimal`), роль (`role`), флаги уведомлений, Telegram-связку.
 *   `Order`: Заказ услуги. Связан с `User` и `InfrastructureService`. Хранит `pterodactyl_server_id` и `last_error`.
     *   Статусы: `active`, `suspended`, `cancelled`, `failed`, `pending`, `paid`.
     *   `auto_renewal`: bool (автопродление).
 *   `InfrastructureService`: Тарифный план. Хранит JSON-конфигурацию для Pterodactyl (`specifications`).
 *   `Ticket` / `TicketMessage`: Система поддержки. Полиморфная связь с вложениями (Attachments).
 *   `UserLog`: Логирование действий (Observer pattern).
+*   `Payment`: Платежи T‑Bank (создание/статусы/credited_at).
+*   `BalanceLog`: Финансовая история (пополнения/списания/продления/покупки).
+*   `Receipt`: Чеки (PDF/Email/публичная ссылка/подпись/QR-верификация).
+*   `AuditLog`: Системный аудит (действия админки, платежи, чеки).
 
 ### Сервисы (Services)
 Основная логика работы с внешними API вынесена в `App\Services`.
@@ -48,6 +54,18 @@
 *   `findFreeAllocation($nodeId)`: Ищет свободный порт на узле (Node).
 *   `getServerDetails($serverId)`: Получает информацию о сервере.
 
+#### `TBankService`
+Инициализация платежа (`Init`) и запрос статуса (`GetState`).
+
+#### `TBankPaymentProcessor`
+Единая точка применения статусов провайдера к локальной модели `Payment`:
+* обновляет `payments.status/payload/payment_id`
+* при `CONFIRMED` начисляет баланс, пишет `balance_logs`, ставит `credited_at`
+* создаёт чек и отправляет на email
+
+#### `ReceiptService`
+Формирование чека, PDF, QR и отправка на email.
+
 ### Команды (Commands)
 Автоматизация процессов через Artisan Console.
 *   `billing:check-expirations`: Ежедневная проверка сроков.
@@ -58,14 +76,22 @@
     *   Если в панели `suspended`, а в БД `active` -> меняет на `suspended`.
     *   Если в панели `active`, а в БД `suspended` (и не просрочен) -> размораживает в БД.
 
+*   `payments:reconcile-tbank`: Дожим pending платежей T‑Bank через `GetState`.
+    *   `--minutes>0` — проверяет платежи старше N минут.
+    *   `--minutes=0` — проверяет все pending платежи.
+
 ## Структура Базы Данных
 
 Основные таблицы:
-*   `users`: id, name, email, balance, is_admin, pterodactyl_id...
+*   `users`: id, name, email, balance, role, pterodactyl_id...
 *   `orders`: id, user_id, service_id, status, price, expires_at, auto_renewal, server_ip, server_port...
 *   `infrastructure_services`: id, name, price, specifications (json), category_id...
 *   `tickets`: id, user_id, subject, status, priority...
-*   `user_logs`: id, user_id, action, description, ip_address...
+*   `payments`: id, user_id, amount, status, payment_id, credited_at, payload...
+*   `balance_logs`: id, user_id, amount, type, description...
+*   `receipts`: uuid, user_id, receipt_number, type, amount, public_token, signature, pdf_path...
+*   `audit_logs`: системный аудит
+*   `user_logs`: действия пользователя (логин/логаут/регистрация/и т.д.)
 
 ## Взаимодействие с Pterodactyl
 
@@ -84,9 +110,9 @@
 ## Планы на Будущее (Roadmap)
 
 В следующих версиях планируется реализовать:
-1.  **Автоматическая касса**: Интеграция с платежными шлюзами (T-Bank, ЮKassa и др.) для пополнения баланса.
+1.  **Надежность платежей**: улучшение диагностики доставок вебхуков, авто-reconcile по расписанию.
 2.  **Смена тарифа (Server Build Update)**: Автоматическое изменение ресурсов (CPU/RAM) в Pterodactyl при смене тарифа в биллинге.
 3.  **Переустановка сервера**: Возможность переустановить сервер (Reinstall) из личного кабинета.
 4.  **Бекапы**: Управление резервными копиями через биллинг.
 5.  **API для разработчиков**: REST API для управления заказами из сторонних приложений.
-6.  **Уведомления**: Отправка Email/Telegram уведомлений о статусе заказа, ответах в тикетах и низком балансе.
+6.  **Уведомления**: развитие Email/Telegram уведомлений и шаблонов.
