@@ -1,0 +1,17 @@
+# Table of contents
+
+* [Система биллинга NODEUM](README.md)
+* [docs](docs/README.md)
+  * [Руководство Администратора NODEUM Billing](docs/ADMIN_GUIDE.md)
+  * [Руководство Разработчика NODEUM Billing](docs/DEVELOPER_GUIDE.md)
+  * [Логи / аудит / очистка](docs/LOGS_AND_AUDIT.md)
+  * [Платежи T‑Bank](docs/PAYMENTS_TBANK.md)
+  * [Чеки (PDF / Email / публичная ссылка)](docs/RECEIPTS.md)
+  * [Руководство Пользователя NODEUM Billing](docs/USER_GUIDE.md)
+* [.trae](.trae/README.md)
+  * [Нейросетевые предложения](.trae/documents/README.md)
+    * [Что ещё можно улучшить (предложения)](.trae/documents/future-improvements-ru.md)
+    * [Реализация: публичные страницы, SEO, уведомления и UX](.trae/documents/implementation-notes-ru.md)
+    * [Дизайн страниц (desktop-first)](.trae/documents/page-design-modernization-ru.md)
+    * [prd-modernization-security-payments-notifications-ru](.trae/documents/prd-modernization-security-payments-notifications-ru.md)
+    * [technical-architecture-modernization-ru](.trae/documents/technical-architecture-modernization-ru.md)
