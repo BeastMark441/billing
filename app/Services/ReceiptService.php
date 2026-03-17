@@ -103,7 +103,7 @@ class ReceiptService
         $receiptNumber = 'RCPT-'.$issuedAt->format('Ymd').'-'.strtoupper(Str::random(8));
         $publicToken = Str::random(48);
 
-        $receipt = Receipt::create([
+        $receipt = new Receipt([
             'user_id' => $user->id,
             'receipt_number' => $receiptNumber,
             'type' => $type,
@@ -120,6 +120,7 @@ class ReceiptService
             'signature' => '0',
             'issued_at' => $issuedAt,
         ]);
+        $receipt->save();
 
         $payload = $this->signaturePayload($receipt);
         $signature = hash_hmac('sha256', json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), (string) config('app.key'));
@@ -158,9 +159,11 @@ class ReceiptService
     {
         $verifyUrl = route('receipts.public.verify', ['receipt' => $receipt->id, 'token' => $receipt->public_token]);
 
-        $qr = QrCode::create($verifyUrl)
-            ->setSize(220)
-            ->setMargin(0);
+        $qr = new QrCode(
+            data: $verifyUrl,
+            size: 220,
+            margin: 0,
+        );
         $writer = new PngWriter;
         $qrDataUri = $writer->write($qr)->getDataUri();
 

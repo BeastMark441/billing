@@ -60,6 +60,12 @@ class ReceiptController extends Controller
 
         $filename = $receipt->receipt_number.'.pdf';
 
-        return Storage::disk('local')->download($receipt->pdf_path, $filename);
+        $stream = Storage::disk('local')->readStream($receipt->pdf_path);
+        abort_unless(is_resource($stream), 404);
+
+        return response()->streamDownload(function () use ($stream) {
+            fpassthru($stream);
+            fclose($stream);
+        }, $filename, ['Content-Type' => 'application/pdf']);
     }
 }

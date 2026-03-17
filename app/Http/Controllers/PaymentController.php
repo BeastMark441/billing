@@ -6,15 +6,15 @@ use App\Jobs\ProcessTBankWebhookEvent;
 use App\Models\Payment;
 use App\Models\TBankWebhookEvent;
 use App\Services\AuditLogger;
+use App\Services\TBankPaymentProcessor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class PaymentController extends Controller
 {
     protected $tbankService;
 
-    public function __construct(\App\Services\TBankService $tbankService, protected AuditLogger $auditLogger)
+    public function __construct(\App\Services\TBankService $tbankService, protected AuditLogger $auditLogger, protected TBankPaymentProcessor $processor)
     {
         $this->tbankService = $tbankService;
     }
@@ -74,26 +74,13 @@ class PaymentController extends Controller
                 $this->auditLogger->log('payment_get_state', ['payment_id' => $payment->id, 'state' => $state], 'payment', (string) $payment->id);
 
                 if ($status !== '') {
-                    $payload = [
-                        'source' => 'getState',
-                        'state' => $state,
-                    ];
-
-                    $eventHash = hash('sha256', json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-                    $event = TBankWebhookEvent::firstOrCreate(
-                        ['event_hash' => $eventHash],
-                        [
-                            'order_id' => (string) ($payment->id.'_reconcile_'.Str::random(6)),
-                            'provider_payment_id' => (string) $payment->payment_id,
-                            'status' => $status,
-                            'signature_valid' => true,
-                            'payload' => $payload,
-                        ]
+                    $this->processor->applyProviderStatus(
+                        payment: $payment,
+                        providerStatus: $status,
+                        providerPaymentId: (string) $payment->payment_id,
+                        providerPayload: ['state' => $state],
+                        source: 'getState:success',
                     );
-
-                    if (! $event->processed_at) {
-                        ProcessTBankWebhookEvent::dispatchSync($event->id);
-                    }
                 }
 
                 $payment->refresh();

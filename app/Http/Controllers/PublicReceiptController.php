@@ -27,7 +27,14 @@ class PublicReceiptController extends Controller
 
         $this->auditLogger->log('receipt_downloaded_public', ['receipt_id' => $receipt->id], 'receipt', (string) $receipt->id);
 
-        return Storage::disk('local')->download($receipt->pdf_path, $receipt->receipt_number.'.pdf');
+        $filename = $receipt->receipt_number.'.pdf';
+        $stream = Storage::disk('local')->readStream($receipt->pdf_path);
+        abort_unless(is_resource($stream), 404);
+
+        return response()->streamDownload(function () use ($stream) {
+            fpassthru($stream);
+            fclose($stream);
+        }, $filename, ['Content-Type' => 'application/pdf']);
     }
 
     public function verify(Receipt $receipt, string $token): View

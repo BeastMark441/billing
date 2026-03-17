@@ -110,6 +110,42 @@
                 </form>
             </div>
 
+            @if(isset($pendingPayments) && $pendingPayments->count() > 0)
+                <div class="bg-yellow-500/10 border border-yellow-500/20 text-yellow-200 px-4 py-3 rounded-xl">
+                    <div class="font-semibold">Есть платежи в обработке</div>
+                    <div class="mt-1 text-sm text-yellow-200/80">Платёж появится на балансе после подтверждения банка. Если в течении 30 минут статус не изменится, он обратитесь в поддержку.</div>
+                </div>
+
+                <div class="bg-[#050508] border border-white/10 rounded-xl overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-gray-400">
+                            <thead class="bg-white/5 text-gray-200 uppercase text-xs">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">Дата</th>
+                                    <th scope="col" class="px-6 py-3">Описание</th>
+                                    <th scope="col" class="px-6 py-3">Статус</th>
+                                    <th scope="col" class="px-6 py-3 text-right">Сумма</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5">
+                                @foreach($pendingPayments as $payment)
+                                    <tr class="hover:bg-white/5 transition-colors">
+                                        <td class="px-6 py-4 whitespace-nowrap">{{ $payment->created_at->format('d.m.Y H:i') }}</td>
+                                        <td class="px-6 py-4 font-medium text-white">Пополнение баланса (в обработке)</td>
+                                        <td class="px-6 py-4">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-300">
+                                                {{ strtoupper((string) $payment->status) }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-right font-bold text-yellow-300">+{{ number_format((float) $payment->amount, 2, '.', ' ') }} ₽</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
+
             <div class="bg-[#050508] border border-white/10 rounded-xl overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm text-gray-400">

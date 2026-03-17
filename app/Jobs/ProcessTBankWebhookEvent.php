@@ -3,11 +3,9 @@
 namespace App\Jobs;
 
 use App\Models\Payment;
-use App\Models\Receipt;
 use App\Models\TBankWebhookEvent;
-use App\Notifications\GeneralNotification;
 use App\Services\AuditLogger;
-use App\Services\ReceiptService;
+use App\Services\TBankPaymentProcessor;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -29,7 +27,7 @@ class ProcessTBankWebhookEvent implements ShouldQueue
 
     public function __construct(public int $eventId) {}
 
-    public function handle(AuditLogger $auditLogger, ReceiptService $receiptService): void
+    public function handle(AuditLogger $auditLogger, TBankPaymentProcessor $processor): void
     {
         /** @var TBankWebhookEvent|null $event */
         $event = TBankWebhookEvent::find($this->eventId);
@@ -63,11 +61,11 @@ class ProcessTBankWebhookEvent implements ShouldQueue
             return;
         }
 
-        $receiptUser = null;
-        $receiptAmount = null;
-        $receiptContext = [];
+        $payload = null;
+        $providerStatus = null;
+        $providerPaymentId = null;
 
-        DB::transaction(function () use ($auditLogger, $event, $paymentId, &$receiptUser, &$receiptAmount, &$receiptContext) {
+        DB::transaction(function () use ($event, $paymentId, &$payload, &$providerStatus, &$providerPaymentId) {
             /** @var Payment|null $payment */
             $payment = Payment::lockForUpdate()->find($paymentId);
             if (! $payment) {
@@ -81,61 +79,14 @@ class ProcessTBankWebhookEvent implements ShouldQueue
             }
 
             $status = strtoupper((string) $event->status);
+            $providerStatus = $status;
+            $providerPaymentId = $event->provider_payment_id ?: $payment->payment_id;
+            $payload = $event->payload;
             $payment->update([
                 'status' => strtolower($status),
                 'payment_id' => $event->provider_payment_id ?: $payment->payment_id,
                 'payload' => array_merge($payment->payload ?? [], ['webhook' => $event->payload]),
             ]);
-
-            if ($status === 'CONFIRMED') {
-                if ($payment->credited_at) {
-                    $event->update([
-                        'processed_at' => now(),
-                        'process_result' => 'ok',
-                    ]);
-
-                    return;
-                }
-
-                $user = $payment->user()->lockForUpdate()->first();
-                if (! $user) {
-                    throw new \Exception('User not found for payment '.$payment->id);
-                }
-
-                $user->increment('balance', $payment->amount);
-                $user->balanceLogs()->create([
-                    'amount' => $payment->amount,
-                    'type' => 'deposit',
-                    'description' => 'Пополнение баланса (T-Bank #'.$payment->id.')',
-                ]);
-
-                $payment->update(['credited_at' => now()]);
-
-                $user->notify(new GeneralNotification(
-                    'Баланс пополнен',
-                    'Ваш баланс успешно пополнен на '.number_format((float) $payment->amount, 2, '.', ' ').' ₽.',
-                    'success',
-                    route('dashboard.billing'),
-                    'Перейти к финансам'
-                ));
-
-                $auditLogger->log(
-                    'payment_confirmed',
-                    ['payment_id' => $payment->id, 'provider_payment_id' => $payment->payment_id],
-                    'payment',
-                    (string) $payment->id,
-                    'info'
-                );
-
-                $receiptUser = $user;
-                $receiptAmount = (float) $payment->amount;
-                $receiptContext = [
-                    'payment_method' => 'T-Bank',
-                    'related_type' => 'payment',
-                    'related_id' => (string) $payment->id,
-                    'provider_payment_id' => (string) ($payment->payment_id ?? ''),
-                ];
-            }
 
             $event->update([
                 'processed_at' => now(),
@@ -143,20 +94,15 @@ class ProcessTBankWebhookEvent implements ShouldQueue
             ]);
         });
 
-        if ($receiptUser && $receiptAmount !== null) {
-            $existing = Receipt::query()
-                ->where('type', 'deposit')
-                ->where('related_type', 'payment')
-                ->where('related_id', (string) ($receiptContext['related_id'] ?? ''))
-                ->first();
-
-            if (! $existing) {
-                try {
-                    $receiptService->issueForDeposit($receiptUser, (float) $receiptAmount, $receiptContext);
-                } catch (\Throwable $e) {
-                    $auditLogger->log('receipt_issue_failed', ['error' => $e->getMessage(), 'context' => $receiptContext], 'payment', (string) ($receiptContext['related_id'] ?? ''), 'error');
-                }
-            }
+        $payment = Payment::find($paymentId);
+        if ($payment && $providerStatus && $payload) {
+            $processor->applyProviderStatus(
+                payment: $payment,
+                providerStatus: $providerStatus,
+                providerPaymentId: $providerPaymentId,
+                providerPayload: (array) $payload,
+                source: 'webhook',
+            );
         }
     }
 
