@@ -83,4 +83,3 @@ class SeoController extends Controller
         return response(implode("\n", $lines), 200)->header('Content-Type', 'text/plain; charset=UTF-8');
     }
 }
-

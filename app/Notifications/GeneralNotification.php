@@ -2,12 +2,13 @@
 
 namespace App\Notifications;
 
+use App\Contracts\TelegramNotification as TelegramNotificationContract;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class GeneralNotification extends Notification implements ShouldQueue
+class GeneralNotification extends Notification implements ShouldQueue, TelegramNotificationContract
 {
     use Queueable;
 

@@ -27,6 +27,7 @@ class AuditPresenter
 
             'payment_create' => 'Создан платеж',
             'payment_create_failed' => 'Ошибка создания платежа',
+            'payment_confirmed' => 'Платеж подтверждён',
 
             'order_created' => 'Оформлен заказ',
             'order_auto_renewal_toggled' => 'Автопродление изменено',
@@ -41,6 +42,13 @@ class AuditPresenter
 
             'pterodactyl_provision_success' => 'Сервер активирован',
             'pterodactyl_provision_failed' => 'Ошибка активации сервера',
+
+            'pterodactyl_sync_conflict' => 'Конфликт синхронизации Pterodactyl',
+            'pterodactyl_sync_remote_suspended' => 'Сервер приостановлен на стороне Pterodactyl',
+            'pterodactyl_sync_error' => 'Ошибка синхронизации Pterodactyl',
+
+            'admin_ticket_updated' => 'Тикет обновлён администратором',
+            'admin_ticket_reply' => 'Ответ администратора в тикете',
         ];
 
         return $map[$log->action] ?? self::fallbackTitle($log->action);
@@ -55,6 +63,13 @@ class AuditPresenter
                 if (isset($meta['amount'])) {
                     return 'Сумма: '.number_format((float) $meta['amount'], 0, '.', ' ').' ₽';
                 }
+
+                return null;
+            case 'payment_confirmed':
+                if (isset($meta['payment_id'])) {
+                    return 'Платёж #'.(string) $meta['payment_id'].' успешно проведён';
+                }
+
                 return null;
             case 'payment_create_failed':
                 return isset($meta['error']) ? 'Причина: '.self::limit((string) $meta['error']) : null;
@@ -62,17 +77,30 @@ class AuditPresenter
                 if (isset($meta['price'])) {
                     return 'Стоимость: '.number_format((float) $meta['price'], 0, '.', ' ').' ₽';
                 }
+
                 return null;
+            case 'notification_preferences_updated':
+                $parts = [];
+                if (array_key_exists('notify_email', $meta)) {
+                    $parts[] = 'Email: '.(((bool) $meta['notify_email']) ? 'включён' : 'выключен');
+                }
+                if (array_key_exists('notify_telegram', $meta)) {
+                    $parts[] = 'Telegram: '.(((bool) $meta['notify_telegram']) ? 'включён' : 'выключен');
+                }
+
+                return count($parts) ? implode(' · ', $parts) : null;
             case 'order_auto_renewal_toggled':
                 if (array_key_exists('enabled', $meta)) {
                     return ((bool) $meta['enabled']) ? 'Включено' : 'Выключено';
                 }
+
                 return null;
             case 'order_renewed':
             case 'order_auto_renewed':
                 if (isset($meta['amount'])) {
                     return 'Сумма: '.number_format((float) $meta['amount'], 0, '.', ' ').' ₽';
                 }
+
                 return null;
             case 'auth_login':
                 return isset($meta['ip']) ? 'IP: '.(string) $meta['ip'] : null;
@@ -83,12 +111,32 @@ class AuditPresenter
                 if (isset($meta['to'])) {
                     return 'Новый email: '.(string) $meta['to'];
                 }
+
                 return null;
             case 'ticket_created':
                 if (isset($meta['priority'])) {
-                    return 'Приоритет: '.(string) $meta['priority'];
+                    $priorityMap = [
+                        'low' => 'низкий',
+                        'medium' => 'средний',
+                        'high' => 'высокий',
+                    ];
+                    $priority = strtolower((string) $meta['priority']);
+
+                    return 'Приоритет: '.($priorityMap[$priority] ?? (string) $meta['priority']);
                 }
+
                 return null;
+            case 'pterodactyl_provision_failed':
+            case 'pterodactyl_sync_error':
+                return isset($meta['error']) ? 'Причина: '.self::limit((string) $meta['error']) : null;
+            case 'pterodactyl_sync_conflict':
+                if (isset($meta['remote'], $meta['local'])) {
+                    return 'Локально: '.(string) $meta['local'].' · На сервере: '.(string) $meta['remote'];
+                }
+
+                return null;
+            case 'pterodactyl_sync_remote_suspended':
+                return isset($meta['reason']) ? 'Причина: '.(string) $meta['reason'] : null;
             default:
                 return null;
         }
@@ -115,4 +163,3 @@ class AuditPresenter
         return mb_substr($value, 0, $max - 1).'…';
     }
 }
-

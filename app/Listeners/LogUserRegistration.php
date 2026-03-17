@@ -7,6 +7,7 @@ use App\Models\UserLog;
 use App\Notifications\GeneralNotification;
 use App\Services\AuditLogger;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Request;
 
 class LogUserRegistration
@@ -31,7 +32,7 @@ class LogUserRegistration
 
         $this->auditLogger->log('auth_register', ['ip' => Request::ip(), 'user_agent' => Request::userAgent()], 'user', (string) $event->user->id);
 
-        $event->user->notify(new GeneralNotification(
+        Notification::send($event->user, new GeneralNotification(
             'Регистрация',
             'Аккаунт успешно создан.',
             'success'
@@ -39,7 +40,7 @@ class LogUserRegistration
 
         $admins = User::where('role', 'admin')->get();
         foreach ($admins as $admin) {
-            $admin->notify(new GeneralNotification(
+            Notification::send($admin, new GeneralNotification(
                 'Новый пользователь',
                 'Зарегистрирован новый пользователь: '.$event->user->email.'.',
                 'info',

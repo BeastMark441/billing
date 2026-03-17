@@ -40,6 +40,14 @@
             </div>
         </div>
 
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <x-input-label for="birth_date" :value="__('Дата рождения')" />
+                <x-text-input id="birth_date" name="birth_date" type="date" :value="old('birth_date', $user->birth_date ? $user->birth_date->format('Y-m-d') : null)" autocomplete="bday" />
+                <x-input-error class="mt-2" :messages="$errors->get('birth_date')" />
+            </div>
+        </div>
+
         <div>
             <x-input-label for="email" :value="__('Email')" />
             <x-text-input id="email" name="email" type="email" :value="old('email', $user->email)" required placeholder="email@example.com" autocomplete="username" />

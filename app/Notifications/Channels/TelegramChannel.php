@@ -2,6 +2,7 @@
 
 namespace App\Notifications\Channels;
 
+use App\Contracts\TelegramNotification;
 use App\Notifications\TelegramMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Http;
@@ -19,7 +20,7 @@ class TelegramChannel
             return;
         }
 
-        if (! method_exists($notification, 'toTelegram')) {
+        if (! $notification instanceof TelegramNotification) {
             return;
         }
 

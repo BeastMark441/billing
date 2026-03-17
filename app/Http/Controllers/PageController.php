@@ -119,6 +119,7 @@ class PageController extends Controller
     public function legal()
     {
         $docs = $this->legalDocs();
+
         return view('pages.legal', ['docs' => $docs]);
     }
 

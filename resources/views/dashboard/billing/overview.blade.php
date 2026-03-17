@@ -1,5 +1,25 @@
 <x-app-layout>
     <div class="space-y-8">
+        @if (session('success') || session('error') || $errors->any())
+            <div class="space-y-3">
+                @if (session('success'))
+                    <div class="bg-green-500/10 border border-green-500/20 text-green-200 px-4 py-3 rounded-xl">
+                        {{ session('success') }}
+                    </div>
+                @endif
+                @if (session('error'))
+                    <div class="bg-red-500/10 border border-red-500/20 text-red-200 px-4 py-3 rounded-xl">
+                        {{ session('error') }}
+                    </div>
+                @endif
+                @if ($errors->any())
+                    <div class="bg-red-500/10 border border-red-500/20 text-red-200 px-4 py-3 rounded-xl">
+                        Проверьте введённые данные.
+                    </div>
+                @endif
+            </div>
+        @endif
+
         <div>
             <h2 class="text-2xl font-bold text-white">Обзор биллинга</h2>
             <p class="text-sm text-gray-400">Управление балансом и финансами.</p>
@@ -24,7 +44,7 @@
             </div>
 
     <!-- Top Up Modal -->
-    <div id="topUpModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+    <div id="topUpModal" class="{{ ($errors->has('amount') || session('error')) ? '' : 'hidden' }} fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
         <div class="bg-[#1a1a20] rounded-2xl max-w-md w-full p-6 border border-white/10">
             <h3 class="text-xl font-bold text-white mb-4">Пополнение баланса</h3>
             <p class="text-gray-400 text-sm mb-6">Введите сумму пополнения. Вы будете перенаправлены на защищенную страницу оплаты T-Bank.</p>
@@ -35,6 +55,9 @@
                     <label class="block text-sm font-medium text-gray-300 mb-2">Сумма (₽)</label>
                     <input type="number" name="amount" min="10" max="30000" step="1" required placeholder="500" 
                            class="w-full bg-[#0a0a0f] border border-white/10 rounded-lg px-4 py-2 text-white text-lg font-bold focus:border-[#a6cb40] focus:ring focus:ring-[#a6cb40] focus:ring-opacity-50">
+                    @error('amount')
+                        <div class="mt-2 text-xs text-red-300">{{ $message }}</div>
+                    @enderror
                     <div class="flex justify-between text-xs text-gray-500 mt-2">
                         <span>Мин: 10 ₽</span>
                         <span>Макс: 30 000 ₽</span>

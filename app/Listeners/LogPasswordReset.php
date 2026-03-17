@@ -6,6 +6,7 @@ use App\Models\UserLog;
 use App\Notifications\GeneralNotification;
 use App\Services\AuditLogger;
 use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Request;
 
 class LogPasswordReset
@@ -30,7 +31,7 @@ class LogPasswordReset
 
         $this->auditLogger->log('auth_password_reset', ['ip' => Request::ip(), 'user_agent' => Request::userAgent()], 'user', (string) $event->user->id, 'warning');
 
-        $event->user->notify(new GeneralNotification(
+        Notification::send($event->user, new GeneralNotification(
             'Сброс пароля',
             'Пароль был сброшен. Если это были не вы, срочно смените пароль и обратитесь в поддержку.',
             'warning',

@@ -24,10 +24,57 @@
                     <div class="mt-8 bg-[#050508] border border-white/10 rounded-2xl p-6">
                         <h2 class="text-lg font-bold text-white mb-4">Характеристики</h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            @php
+                                $specLabels = [
+                                    'memory' => 'ОЗУ',
+                                    'disk' => 'Диск',
+                                    'cpu' => 'CPU',
+                                    'databases' => 'Базы данных',
+                                    'backups' => 'Резервные копии',
+                                    'allocations' => 'Порты',
+                                ];
+
+                                $hiddenSpecKeys = ['egg_id', 'io', 'swap', 'spaw'];
+
+                                $formatSizeMb = function ($mb) {
+                                    $mb = (float) $mb;
+                                    if ($mb >= 1024) {
+                                        $gb = $mb / 1024;
+                                        $formatted = rtrim(rtrim(number_format($gb, 1, '.', ''), '0'), '.');
+                                        return $formatted.' ГБ';
+                                    }
+                                    return (string) ((int) $mb).' МБ';
+                                };
+                            @endphp
+
                             @foreach($service->specifications as $key => $value)
-                                <div class="flex items-start justify-between gap-3 bg-white/5 rounded-lg px-4 py-3">
-                                    <div class="text-sm text-gray-400">{{ is_string($key) ? $key : 'Параметр' }}</div>
-                                    <div class="text-sm text-white text-right break-words">{{ is_scalar($value) ? (string) $value : json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}</div>
+                                @php
+                                    $rawKey = is_string($key) ? $key : '';
+                                    $normalizedKey = strtolower(trim($rawKey));
+
+                                    if ($normalizedKey !== '' && in_array($normalizedKey, $hiddenSpecKeys, true)) {
+                                        continue;
+                                    }
+
+                                    $label = $rawKey !== '' ? ($specLabels[$normalizedKey] ?? $rawKey) : 'Параметр';
+
+                                    $displayValue = '';
+                                    if (is_scalar($value)) {
+                                        if (in_array($normalizedKey, ['memory', 'disk'], true) && is_numeric($value)) {
+                                            $displayValue = $formatSizeMb($value);
+                                        } elseif ($normalizedKey === 'cpu' && is_numeric($value)) {
+                                            $displayValue = (string) ((int) $value).'%';
+                                        } else {
+                                            $displayValue = (string) $value;
+                                        }
+                                    } else {
+                                        $displayValue = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                                    }
+                                @endphp
+
+                                <div class="flex items-start justify-between gap-3 bg-white/5 rounded-lg px-4 py-3 min-w-0">
+                                    <div class="text-sm text-gray-400">{{ $label }}</div>
+                                    <div class="text-sm text-white text-right break-words min-w-0">{{ $displayValue }}</div>
                                 </div>
                             @endforeach
                         </div>
@@ -73,4 +120,3 @@
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
 </script>
 @endsection
-

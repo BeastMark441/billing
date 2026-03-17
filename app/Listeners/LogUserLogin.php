@@ -6,6 +6,7 @@ use App\Models\UserLog;
 use App\Notifications\GeneralNotification;
 use App\Services\AuditLogger;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Request;
 
 class LogUserLogin
@@ -30,7 +31,7 @@ class LogUserLogin
 
         $this->auditLogger->log('auth_login', ['ip' => Request::ip(), 'user_agent' => Request::userAgent()], 'user', (string) $event->user->id);
 
-        $event->user->notify(new GeneralNotification(
+        Notification::send($event->user, new GeneralNotification(
             'Вход в систему',
             'Зафиксирован вход в аккаунт. IP: '.(Request::ip() ?? '-'),
             'info'

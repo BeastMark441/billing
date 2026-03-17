@@ -159,7 +159,7 @@
                                         @endif
                                     </button>
 
-                                    <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="transform opacity-100 scale-100" x-transition:leave-end="transform opacity-0 scale-95" class="absolute bottom-12 right-0 w-80 bg-[#1a1a20] border border-white/10 rounded-xl shadow-xl py-2 z-50 origin-bottom-right" style="display: none;">
+                                    <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="transform opacity-100 scale-100" x-transition:leave-end="transform opacity-0 scale-95" class="absolute bottom-12 left-full ml-3 w-[min(20rem,calc(100vw-1.5rem))] bg-[#1a1a20] border border-white/10 rounded-xl shadow-xl py-2 z-50 origin-bottom-left" style="display: none;">
                                         <div class="px-4 py-3 border-b border-white/10 flex justify-between items-center">
                                             <span class="text-sm font-bold text-white">Уведомления</span>
                                             @if(Auth::user()->unreadNotifications->count() > 0)
@@ -169,7 +169,7 @@
                                                 </form>
                                             @endif
                                         </div>
-                                        <div class="max-h-[320px] overflow-y-auto custom-scrollbar">
+                                        <div class="max-h-[min(320px,calc(100vh-10rem))] overflow-y-auto custom-scrollbar">
                                             @forelse(Auth::user()->notifications()->latest()->take(5)->get() as $notification)
                                                 <div class="px-4 py-3 border-b border-white/5 hover:bg-white/5 transition-colors group relative {{ $notification->read_at ? 'opacity-60' : '' }}">
                                                     <div class="flex items-start gap-3">

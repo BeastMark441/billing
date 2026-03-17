@@ -14,11 +14,18 @@ class TBankService
 
     protected $baseUrl;
 
+    protected bool $verifySsl;
+
     public function __construct()
     {
         $this->terminalKey = config('services.tbank.terminal_key');
         $this->password = config('services.tbank.password');
-        $this->baseUrl = config('services.tbank.url');
+        $this->baseUrl = (string) config('services.tbank.url');
+        $this->verifySsl = (bool) config('services.tbank.verify_ssl', true);
+
+        if ($this->baseUrl !== '' && ! str_ends_with($this->baseUrl, '/')) {
+            $this->baseUrl .= '/';
+        }
     }
 
     /**
@@ -26,6 +33,10 @@ class TBankService
      */
     public function init(Payment $payment)
     {
+        if (! $this->terminalKey || ! $this->password || $this->baseUrl === '') {
+            throw new \Exception('Платёжная система T-Bank не настроена. Проверьте параметры в .env (TerminalKey, Password, URL).');
+        }
+
         // Amount in kopecks (cents)
         $amountKopecks = (int) ($payment->amount * 100);
 
@@ -65,7 +76,11 @@ class TBankService
         $params['Token'] = $this->generateToken($params);
 
         // Send JSON request
-        $response = Http::asJson()->timeout(12)->retry(2, 250)->post($this->baseUrl.'Init', $params);
+        $response = Http::asJson()
+            ->withOptions(['verify' => $this->verifySsl])
+            ->timeout(12)
+            ->retry(2, 250)
+            ->post($this->baseUrl.'Init', $params);
 
         if (! $response->successful() || ! $response->json('Success')) {
             Log::error('TBank Init Error', ['response' => $response->json(), 'payment_id' => $payment->id]);
@@ -74,8 +89,12 @@ class TBankService
 
         $data = $response->json();
 
+        if (! isset($data['PaymentURL']) || ! is_string($data['PaymentURL']) || $data['PaymentURL'] === '') {
+            throw new \Exception('T-Bank вернул пустую ссылку на оплату.');
+        }
+
         $payment->update([
-            'payment_id' => $data['PaymentId'],
+            'payment_id' => $data['PaymentId'] ?? null,
             'payment_url' => $data['PaymentURL'],
             'status' => 'pending',
             'payload' => array_merge($payment->payload ?? [], ['init_response' => $data]),
@@ -96,7 +115,10 @@ class TBankService
 
         $params['Token'] = $this->generateToken($params);
 
-        $response = Http::timeout(12)->retry(2, 250)->post($this->baseUrl.'GetState', $params);
+        $response = Http::withOptions(['verify' => $this->verifySsl])
+            ->timeout(12)
+            ->retry(2, 250)
+            ->post($this->baseUrl.'GetState', $params);
 
         return $response->json();
     }

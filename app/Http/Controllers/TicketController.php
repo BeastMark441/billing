@@ -19,7 +19,7 @@ class TicketController extends Controller
         /** @var User $user */
         $user = Auth::user();
         $query = $user->tickets()->latest();
-        $filter = $request->get('status', 'all');
+        $filter = $request->input('status', 'all');
 
         if ($filter !== 'all') {
             $query->where('status', $filter);

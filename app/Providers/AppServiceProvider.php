@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
@@ -20,7 +21,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Event listeners are auto-discovered
+        Event::listen(Logout::class, \App\Listeners\LogUserLogout::class);
+
         \App\Models\Order::observe(\App\Observers\UserLogObserver::class);
         \App\Models\Ticket::observe(\App\Observers\UserLogObserver::class);
         \App\Models\TicketMessage::observe(\App\Observers\UserLogObserver::class);

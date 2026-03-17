@@ -46,12 +46,14 @@ return [
         'terminal_key' => env('TBANK_TERMINAL_KEY'),
         'password' => env('TBANK_PASSWORD'),
         'url' => env('TBANK_API_URL', 'https://securepay.tinkoff.ru/v2/'),
+        'verify_ssl' => env('TBANK_VERIFY_SSL', true),
     ],
 
     'telegram' => [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
         'bot_username' => env('TELEGRAM_BOT_USERNAME'),
         'webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET'),
+        'verify_ssl' => env('TELEGRAM_VERIFY_SSL', true),
     ],
 
     'social' => [
