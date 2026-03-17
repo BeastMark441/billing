@@ -4,12 +4,15 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\InfrastructureCategoryController as AdminInfrastructureCategoryController;
 use App\Http\Controllers\Admin\InfrastructureServiceController as AdminInfrastructureServiceController;
 use App\Http\Controllers\Admin\InfrastructureSubcategoryController as AdminInfrastructureSubcategoryController;
+use App\Http\Controllers\Admin\LogController as AdminLogController;
 use App\Http\Controllers\Admin\TicketController as AdminTicketController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicReceiptController;
+use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\TelegramIntegrationController;
 use App\Http\Controllers\TelegramWebhookController;
@@ -38,6 +41,10 @@ Route::get('/api-docs', [PageController::class, 'apiDocs'])->name('api-docs');
 
 Route::get('/legal', [PageController::class, 'legal'])->name('legal');
 Route::get('/legal/{doc}', [PageController::class, 'legalDoc'])->name('legal.doc');
+
+Route::get('/r/{receipt}/{token}', [PublicReceiptController::class, 'show'])->name('receipts.public.show');
+Route::get('/r/{receipt}/{token}/download', [PublicReceiptController::class, 'download'])->name('receipts.public.download');
+Route::get('/r/{receipt}/{token}/verify', [PublicReceiptController::class, 'verify'])->name('receipts.public.verify');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -92,6 +99,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/payments/create', [\App\Http\Controllers\PaymentController::class, 'store'])->name('payments.create');
     Route::get('/payments/success', [\App\Http\Controllers\PaymentController::class, 'success'])->name('payments.success');
     Route::get('/payments/failed', [\App\Http\Controllers\PaymentController::class, 'failed'])->name('payments.failed');
+
+    // Receipts
+    Route::get('/receipts', [ReceiptController::class, 'index'])->name('dashboard.receipts.index');
+    Route::get('/receipts/{receipt}', [ReceiptController::class, 'show'])->name('dashboard.receipts.show');
+    Route::get('/receipts/{receipt}/download', [ReceiptController::class, 'download'])->name('dashboard.receipts.download');
 });
 
 Route::post('/payments/webhook', [\App\Http\Controllers\PaymentController::class, 'webhook'])->name('payments.webhook');
@@ -100,6 +112,10 @@ Route::post('/telegram/webhook', TelegramWebhookController::class)->name('telegr
 // Admin Routes
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('/logs', [AdminLogController::class, 'index'])->name('logs.index');
+    Route::delete('/logs/user', [AdminLogController::class, 'destroyUser'])->middleware('superadmin')->name('logs.user.destroy');
+    Route::delete('/logs', [AdminLogController::class, 'destroyAll'])->middleware('superadmin')->name('logs.destroy');
 
     Route::resource('users', AdminUserController::class);
     Route::post('users/{user}/balance', [AdminUserController::class, 'updateBalance'])->name('users.balance');
@@ -160,6 +176,8 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
 
     // Admin Finance
     Route::get('/finance', [\App\Http\Controllers\Admin\FinanceController::class, 'index'])->name('finance.index');
+    Route::delete('/finance', [\App\Http\Controllers\Admin\FinanceController::class, 'destroyFiltered'])->middleware('superadmin')->name('finance.destroy');
+    Route::delete('/finance/{log}', [\App\Http\Controllers\Admin\FinanceController::class, 'destroy'])->middleware('superadmin')->name('finance.logs.destroy');
 });
 
 require __DIR__.'/auth.php';

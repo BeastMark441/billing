@@ -3,8 +3,10 @@
 namespace Tests\Feature\Payments;
 
 use App\Models\Payment;
+use App\Models\Receipt;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class TBankWebhookTest extends TestCase
@@ -44,6 +46,7 @@ class TBankWebhookTest extends TestCase
 
     public function test_webhook_credits_balance_once(): void
     {
+        Mail::fake();
         config([
             'services.tbank.terminal_key' => 'T123',
             'services.tbank.password' => 'P123',
@@ -77,5 +80,6 @@ class TBankWebhookTest extends TestCase
         $this->assertNotNull($payment->credited_at);
         $this->assertEquals(1000, (float) $user->balance);
         $this->assertDatabaseCount('balance_logs', 1);
+        $this->assertSame(1, Receipt::count());
     }
 }

@@ -3,9 +3,11 @@
 namespace App\Jobs;
 
 use App\Models\Payment;
+use App\Models\Receipt;
 use App\Models\TBankWebhookEvent;
 use App\Notifications\GeneralNotification;
 use App\Services\AuditLogger;
+use App\Services\ReceiptService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -27,7 +29,7 @@ class ProcessTBankWebhookEvent implements ShouldQueue
 
     public function __construct(public int $eventId) {}
 
-    public function handle(AuditLogger $auditLogger): void
+    public function handle(AuditLogger $auditLogger, ReceiptService $receiptService): void
     {
         /** @var TBankWebhookEvent|null $event */
         $event = TBankWebhookEvent::find($this->eventId);
@@ -61,7 +63,11 @@ class ProcessTBankWebhookEvent implements ShouldQueue
             return;
         }
 
-        DB::transaction(function () use ($auditLogger, $event, $paymentId) {
+        $receiptUser = null;
+        $receiptAmount = null;
+        $receiptContext = [];
+
+        DB::transaction(function () use ($auditLogger, $event, $paymentId, &$receiptUser, &$receiptAmount, &$receiptContext) {
             /** @var Payment|null $payment */
             $payment = Payment::lockForUpdate()->find($paymentId);
             if (! $payment) {
@@ -91,9 +97,13 @@ class ProcessTBankWebhookEvent implements ShouldQueue
                     return;
                 }
 
-                $payment->user()->lockForUpdate()->first();
-                $payment->user->increment('balance', $payment->amount);
-                $payment->user->balanceLogs()->create([
+                $user = $payment->user()->lockForUpdate()->first();
+                if (! $user) {
+                    throw new \Exception('User not found for payment '.$payment->id);
+                }
+
+                $user->increment('balance', $payment->amount);
+                $user->balanceLogs()->create([
                     'amount' => $payment->amount,
                     'type' => 'deposit',
                     'description' => 'Пополнение баланса (T-Bank #'.$payment->id.')',
@@ -101,7 +111,7 @@ class ProcessTBankWebhookEvent implements ShouldQueue
 
                 $payment->update(['credited_at' => now()]);
 
-                $payment->user->notify(new GeneralNotification(
+                $user->notify(new GeneralNotification(
                     'Баланс пополнен',
                     'Ваш баланс успешно пополнен на '.number_format((float) $payment->amount, 2, '.', ' ').' ₽.',
                     'success',
@@ -116,6 +126,15 @@ class ProcessTBankWebhookEvent implements ShouldQueue
                     (string) $payment->id,
                     'info'
                 );
+
+                $receiptUser = $user;
+                $receiptAmount = (float) $payment->amount;
+                $receiptContext = [
+                    'payment_method' => 'T-Bank',
+                    'related_type' => 'payment',
+                    'related_id' => (string) $payment->id,
+                    'provider_payment_id' => (string) ($payment->payment_id ?? ''),
+                ];
             }
 
             $event->update([
@@ -123,6 +142,22 @@ class ProcessTBankWebhookEvent implements ShouldQueue
                 'process_result' => 'ok',
             ]);
         });
+
+        if ($receiptUser && $receiptAmount !== null) {
+            $existing = Receipt::query()
+                ->where('type', 'deposit')
+                ->where('related_type', 'payment')
+                ->where('related_id', (string) ($receiptContext['related_id'] ?? ''))
+                ->first();
+
+            if (! $existing) {
+                try {
+                    $receiptService->issueForDeposit($receiptUser, (float) $receiptAmount, $receiptContext);
+                } catch (\Throwable $e) {
+                    $auditLogger->log('receipt_issue_failed', ['error' => $e->getMessage(), 'context' => $receiptContext], 'payment', (string) ($receiptContext['related_id'] ?? ''), 'error');
+                }
+            }
+        }
     }
 
     public function failed(\Throwable $e): void

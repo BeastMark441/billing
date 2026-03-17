@@ -4,11 +4,10 @@ namespace App\Notifications;
 
 use App\Contracts\TelegramNotification as TelegramNotificationContract;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class GeneralNotification extends Notification implements ShouldQueue, TelegramNotificationContract
+class GeneralNotification extends Notification implements TelegramNotificationContract
 {
     use Queueable;
 
@@ -27,6 +26,7 @@ class GeneralNotification extends Notification implements ShouldQueue, TelegramN
      */
     public function __construct($title, $message, $type = 'info', $actionUrl = null, $actionText = null)
     {
+        $this->afterCommit = true;
         $this->title = $title;
         $this->message = $message;
         $this->type = $type;

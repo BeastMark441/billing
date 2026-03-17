@@ -144,6 +144,7 @@
                                         ];
                                         $typeLabels = [
                                             'admin_deposit' => 'Пополнение',
+                                            'deposit' => 'Пополнение',
                                             'bonus' => 'Бонус',
                                             'refund' => 'Возврат',
                                             'correction' => 'Корректировка',

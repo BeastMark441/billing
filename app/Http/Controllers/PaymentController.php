@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\ProcessTBankWebhookEvent;
+use App\Models\Payment;
 use App\Models\TBankWebhookEvent;
 use App\Services\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class PaymentController extends Controller
 {
@@ -51,9 +53,66 @@ class PaymentController extends Controller
 
     public function success(Request $request)
     {
-        // User redirected back from T-Bank
-        // Usually we just show "Success" message, real status update comes via Webhook
-        // But we can check status manually just in case
+        $payment = null;
+
+        if ($request->filled('PaymentId')) {
+            $payment = Payment::query()->where('payment_id', (string) $request->input('PaymentId'))->first();
+        }
+
+        if (! $payment && $request->filled('OrderId')) {
+            $parts = explode('_', (string) $request->input('OrderId'));
+            if (isset($parts[0]) && is_numeric($parts[0])) {
+                $payment = Payment::find((int) $parts[0]);
+            }
+        }
+
+        if ($payment && $payment->payment_id && ! $payment->credited_at) {
+            try {
+                $state = $this->tbankService->getState($payment->payment_id);
+                $status = strtoupper((string) ($state['Status'] ?? ''));
+
+                $this->auditLogger->log('payment_get_state', ['payment_id' => $payment->id, 'state' => $state], 'payment', (string) $payment->id);
+
+                if ($status !== '') {
+                    $payload = [
+                        'source' => 'getState',
+                        'state' => $state,
+                    ];
+
+                    $eventHash = hash('sha256', json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                    $event = TBankWebhookEvent::firstOrCreate(
+                        ['event_hash' => $eventHash],
+                        [
+                            'order_id' => (string) ($payment->id.'_reconcile_'.Str::random(6)),
+                            'provider_payment_id' => (string) $payment->payment_id,
+                            'status' => $status,
+                            'signature_valid' => true,
+                            'payload' => $payload,
+                        ]
+                    );
+
+                    if (! $event->processed_at) {
+                        ProcessTBankWebhookEvent::dispatchSync($event->id);
+                    }
+                }
+
+                $payment->refresh();
+                if ($payment->credited_at) {
+                    return redirect()->route('dashboard.billing')->with('success', 'Платёж подтверждён. Баланс пополнен.');
+                }
+            } catch (\Throwable $e) {
+                $this->auditLogger->log('payment_get_state_failed', ['payment_id' => $payment->id, 'error' => $e->getMessage()], 'payment', (string) $payment->id, 'error');
+            }
+
+            $payment->user?->notify(new \App\Notifications\GeneralNotification(
+                'Платёж обрабатывается',
+                'Платёж принят и обрабатывается. Баланс будет пополнен после подтверждения банка.',
+                'info',
+                route('dashboard.billing'),
+                'Перейти к финансам'
+            ));
+        }
+
         return redirect()->route('dashboard.billing')->with('success', 'Платеж обрабатывается. Баланс будет пополнен в ближайшее время.');
     }
 
@@ -120,7 +179,12 @@ class PaymentController extends Controller
         );
 
         if (! $event->processed_at) {
-            ProcessTBankWebhookEvent::dispatch($event->id);
+            try {
+                ProcessTBankWebhookEvent::dispatchSync($event->id);
+            } catch (\Throwable $e) {
+                $this->auditLogger->log('payment_webhook_process_failed', ['error' => $e->getMessage()], 'payment', (string) ($event->order_id ?? ''), 'error');
+                throw $e;
+            }
         }
 
         return response('OK', 200);

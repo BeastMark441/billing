@@ -49,6 +49,19 @@ class AuditPresenter
 
             'admin_ticket_updated' => 'Тикет обновлён администратором',
             'admin_ticket_reply' => 'Ответ администратора в тикете',
+
+            'receipt_issued' => 'Чек сформирован',
+            'receipt_emailed' => 'Чек отправлен на email',
+            'receipt_downloaded' => 'Чек скачан',
+            'receipt_downloaded_public' => 'Чек скачан по публичной ссылке',
+            'receipt_verified' => 'Проверка чека',
+            'receipt_issue_failed' => 'Ошибка формирования чека',
+
+            'admin_logs_user_deleted' => 'Удалены логи пользователя',
+            'admin_logs_all_deleted' => 'Очищены все логи',
+
+            'admin_finance_log_deleted' => 'Удалена запись финансовой истории',
+            'admin_finance_logs_deleted' => 'Очищена финансовая история',
         ];
 
         return $map[$log->action] ?? self::fallbackTitle($log->action);

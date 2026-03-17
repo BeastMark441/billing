@@ -47,6 +47,7 @@ return [
         'password' => env('TBANK_PASSWORD'),
         'url' => env('TBANK_API_URL', 'https://securepay.tinkoff.ru/v2/'),
         'verify_ssl' => env('TBANK_VERIFY_SSL', true),
+        'webhook_url' => env('TBANK_WEBHOOK_URL'),
     ],
 
     'telegram' => [

@@ -102,6 +102,30 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
+    public function isSuperAdmin(): bool
+    {
+        if (! $this->isAdmin()) {
+            return false;
+        }
+
+        $ids = (array) config('security.super_admin_user_ids', []);
+        foreach ($ids as $id) {
+            if ((string) $id === (string) $this->id) {
+                return true;
+            }
+        }
+
+        $emails = (array) config('security.super_admin_emails', []);
+        $email = strtolower((string) $this->email);
+        foreach ($emails as $allowedEmail) {
+            if (strtolower((string) $allowedEmail) === $email) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function routeNotificationForTelegram(): ?string
     {
         return $this->telegram_chat_id;

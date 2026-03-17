@@ -9,15 +9,18 @@ use App\Models\User;
 use App\Notifications\GeneralNotification;
 use App\Services\AuditLogger;
 use App\Services\PterodactylService;
+use App\Services\ReceiptService;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
     protected $pterodactylService;
 
-    public function __construct(PterodactylService $pterodactylService, protected AuditLogger $auditLogger)
+    public function __construct(PterodactylService $pterodactylService, protected AuditLogger $auditLogger, protected ReceiptService $receiptService)
     {
         $this->pterodactylService = $pterodactylService;
     }
@@ -60,48 +63,103 @@ class OrderController extends Controller
             }
         }
 
-        // Mock payment flow
-        $order = Order::create([
-            'user_id' => Auth::id(),
-            'infrastructure_service_id' => $service->id,
-            'status' => 'pending',
-            'price' => $service->price,
-            'payload' => $request->input('payload', []), // e.g. node selection
-        ]);
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
 
-        $this->auditLogger->log('order_created', ['service_id' => $service->id, 'price' => (float) $service->price], 'order', (string) $order->id);
+        $payload = $request->input('payload', []);
+        $price = (float) $service->price;
 
-        // Simulate payment success immediately
-        $order->update(['paid_at' => now(), 'status' => 'paid']);
+        try {
+            $order = DB::transaction(function () use ($payload, $price, $service, $user) {
+                $lockedUser = User::whereKey($user->id)->lockForUpdate()->first();
+                if (! $lockedUser) {
+                    throw new Exception('Пользователь не найден.');
+                }
 
-        $order->user->notify(new GeneralNotification(
-            'Заказ создан',
-            'Заказ #'.$order->id.' создан и оплачен. Начинаем подготовку услуги.',
-            'success',
-            route('orders.show', $order),
-            'Открыть заказ'
-        ));
+                if ((float) $lockedUser->balance < $price) {
+                    throw new Exception('Недостаточно средств на балансе.');
+                }
 
-        $admins = User::where('role', 'admin')->get();
-        foreach ($admins as $admin) {
-            $admin->notify(new GeneralNotification(
-                'Новый заказ',
-                'Создан новый заказ #'.$order->id.' ('.$service->name.').',
-                'info',
-                route('admin.orders.show', $order),
+                $affected = User::whereKey($lockedUser->id)->decrement('balance', $price);
+                if ($affected !== 1) {
+                    throw new Exception('Не удалось списать средства с баланса.');
+                }
+
+                $lockedUser->balanceLogs()->create([
+                    'amount' => -$price,
+                    'type' => 'purchase',
+                    'description' => 'Покупка услуги: '.$service->name,
+                ]);
+
+                $expiresAt = Carbon::now()->addMonth();
+
+                $order = Order::create([
+                    'user_id' => $lockedUser->id,
+                    'infrastructure_service_id' => $service->id,
+                    'status' => 'paid',
+                    'price' => $service->price,
+                    'payload' => $payload,
+                    'paid_at' => now(),
+                    'expires_at' => $expiresAt,
+                ]);
+
+                $this->auditLogger->log('order_created', ['service_id' => $service->id, 'price' => $price], 'order', (string) $order->id);
+
+                return $order;
+            });
+
+            $order->user->notify(new GeneralNotification(
+                'Заказ создан',
+                'Заказ #'.$order->id.' создан и оплачен. Начинаем подготовку услуги.',
+                'success',
+                route('orders.show', $order),
                 'Открыть заказ'
             ));
+
+            $admins = User::where('role', 'admin')->get();
+            foreach ($admins as $admin) {
+                $admin->notify(new GeneralNotification(
+                    'Новый заказ',
+                    'Создан новый заказ #'.$order->id.' ('.$service->name.').',
+                    'info',
+                    route('admin.orders.show', $order),
+                    'Открыть заказ'
+                ));
+            }
+
+            $existingReceipt = \App\Models\Receipt::query()
+                ->where('type', 'purchase')
+                ->where('related_type', 'order')
+                ->where('related_id', (string) $order->id)
+                ->first();
+
+            if (! $existingReceipt) {
+                try {
+                    $this->receiptService->issueForPurchase($order->user, (string) ($service->name ?? 'Услуга'), (float) $order->price, [
+                        'payment_method' => 'Баланс',
+                        'related_type' => 'order',
+                        'related_id' => (string) $order->id,
+                    ]);
+                } catch (\Throwable $e) {
+                    $this->auditLogger->log('receipt_issue_failed', ['error' => $e->getMessage(), 'order_id' => $order->id], 'order', (string) $order->id, 'error');
+                }
+            }
+
+            if (isset($service->specifications['egg_id'])) {
+                $order->update(['status' => 'provisioning']);
+                ProvisionPterodactylServer::dispatch($order->id);
+
+                return redirect()->route('orders.show', $order)->with('success', 'Заказ создан. Сервер разворачивается, это может занять несколько минут.');
+            }
+
+            $order->update(['status' => 'active']);
+
+            return redirect()->route('orders.show', $order)->with('success', 'Заказ успешно создан.');
+        } catch (Exception $e) {
+            $this->auditLogger->log('order_purchase_failed', ['error' => $e->getMessage(), 'service_id' => $service->id], 'service', (string) $service->id, 'error');
+
+            return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
-
-        // Trigger Provisioning
-        if (isset($service->specifications['egg_id'])) {
-            $order->update(['status' => 'provisioning']);
-            ProvisionPterodactylServer::dispatch($order->id);
-
-            return redirect()->route('orders.show', $order)->with('success', 'Заказ создан. Сервер разворачивается, это может занять несколько минут.');
-        }
-
-        return redirect()->route('orders.show', $order)->with('success', 'Заказ успешно создан.');
     }
 
     public function toggleAutoRenewal(Order $order)

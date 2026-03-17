@@ -47,7 +47,7 @@ class TBankService
             'Description' => 'Пополнение баланса NODEUM',
             'SuccessURL' => route('payments.success'),
             'FailURL' => route('payments.failed'),
-            'NotificationURL' => route('payments.webhook'),
+            'NotificationURL' => (string) (config('services.tbank.webhook_url') ?: route('payments.webhook')),
         ];
 
         // Add Receipt only if taxation system is set (optional for simple transfers but required for fiscalization)
@@ -130,6 +130,8 @@ class TBankService
     {
         $tokenParams = $params;
         unset($tokenParams['Token']);
+        unset($tokenParams['Receipt']);
+        unset($tokenParams['DATA']);
         $tokenParams['Password'] = $this->password;
 
         ksort($tokenParams);
