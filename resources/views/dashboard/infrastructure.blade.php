@@ -77,9 +77,17 @@
                                     <div class="text-xl font-mono text-white font-bold">
                                         <span x-text="new Intl.NumberFormat('ru-RU').format(service.price)"></span> ₽
                                     </div>
-                                    <a :href="`/infrastructure/services/${service.id}/order`" class="px-4 py-2 bg-[#a6cb40] hover:bg-[#bbe053] text-[#0a0a0f] font-bold rounded-lg transition-colors w-full text-sm text-center">
-                                        Заказать
-                                    </a>
+                                    <div class="flex flex-col gap-2 w-full">
+                                        <a :href="`/dashboard/infrastructure/services/${service.id}/order`" class="px-4 py-2 bg-[#a6cb40] hover:bg-[#bbe053] text-[#0a0a0f] font-bold rounded-lg transition-colors text-sm text-center">
+                                            Заказать
+                                        </a>
+                                        <form :action="`/infrastructure/services/${service.id}/cart`" method="POST" class="w-full">
+                                            @csrf
+                                            <button type="submit" class="px-4 py-2 bg-white/5 hover:bg-white/10 text-white font-bold rounded-lg transition-colors w-full text-sm text-center border border-white/10">
+                                                В корзину
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -146,20 +154,31 @@
                                 {{ $subcategory->name }}
                             </h4>
                             <div class="space-y-2">
-                                @forelse($subcategory->services as $index => $service)
-                                <a href="{{ route('orders.create', $service) }}" 
-                                   class="block bg-white/5 hover:bg-white/10 rounded-lg p-3 transition-all group border border-transparent hover:border-white/10"
-                                   x-show="expanded || {{ $index }} < 3"
-                                   x-cloak>
-                                    <div class="flex justify-between items-start mb-1">
-                                        <span class="font-medium text-white text-sm group-hover:text-[#a6cb40] transition-colors line-clamp-1">{{ $service->name }}</span>
-                                        <span class="text-white font-mono text-xs whitespace-nowrap ml-2">{{ number_format($service->price, 0) }} ₽</span>
+                                    @forelse($subcategory->services as $index => $service)
+                                    <div class="bg-white/5 hover:bg-white/10 rounded-lg p-3 transition-all group border border-transparent hover:border-white/10"
+                                         x-show="expanded || {{ $index }} < 3"
+                                         x-cloak>
+                                        <div class="flex justify-between items-start mb-1">
+                                            <a href="{{ route('orders.create', $service) }}" class="font-medium text-white text-sm group-hover:text-[#a6cb40] transition-colors line-clamp-1">{{ $service->name }}</a>
+                                            <span class="text-white font-mono text-xs whitespace-nowrap ml-2">{{ number_format($service->price, 0) }} ₽</span>
+                                        </div>
+                                        @if($service->description)
+                                        <p class="text-[10px] text-gray-500 line-clamp-1 group-hover:text-gray-400 transition-colors">{{ $service->description }}</p>
+                                        @endif
+                                        
+                                        <div class="flex gap-2 mt-2">
+                                            <a href="{{ route('orders.create', $service) }}" class="flex-1 text-center py-1 bg-[#a6cb40] hover:bg-[#bbe053] text-[#0a0a0f] text-[10px] font-bold rounded transition-colors">
+                                                Заказать
+                                            </a>
+                                            <form action="{{ route('cart.add', $service) }}" method="POST" class="flex-1">
+                                                @csrf
+                                                <button type="submit" class="w-full py-1 bg-white/5 hover:bg-white/10 text-white text-[10px] font-bold rounded border border-white/10 transition-colors">
+                                                    В корзину
+                                                </button>
+                                            </form>
+                                        </div>
                                     </div>
-                                    @if($service->description)
-                                    <p class="text-[10px] text-gray-500 line-clamp-1 group-hover:text-gray-400 transition-colors">{{ $service->description }}</p>
-                                    @endif
-                                </a>
-                                @empty
+                                    @empty
                                 <div class="text-[10px] text-gray-600 pl-3 italic">Нет тарифов</div>
                                 @endforelse
 
@@ -185,15 +204,27 @@
                             @endif
                             
                             @foreach($category->services as $service)
-                            <a href="{{ route('orders.create', $service) }}" class="block bg-white/5 hover:bg-white/10 rounded-lg p-3 transition-all group border border-transparent hover:border-white/10">
+                            <div class="bg-white/5 hover:bg-white/10 rounded-lg p-3 transition-all group border border-transparent hover:border-white/10">
                                 <div class="flex justify-between items-start mb-1">
-                                    <span class="font-medium text-white text-sm group-hover:text-[#a6cb40] transition-colors line-clamp-1">{{ $service->name }}</span>
+                                    <a href="{{ route('orders.create', $service) }}" class="font-medium text-white text-sm group-hover:text-[#a6cb40] transition-colors line-clamp-1">{{ $service->name }}</a>
                                     <span class="text-white font-mono text-xs whitespace-nowrap ml-2">{{ number_format($service->price, 0) }} ₽</span>
                                 </div>
                                 @if($service->description)
                                 <p class="text-[10px] text-gray-500 line-clamp-1 group-hover:text-gray-400 transition-colors">{{ $service->description }}</p>
                                 @endif
-                            </a>
+
+                                <div class="flex gap-2 mt-2">
+                                    <a href="{{ route('orders.create', $service) }}" class="flex-1 text-center py-1 bg-[#a6cb40] hover:bg-[#bbe053] text-[#0a0a0f] text-[10px] font-bold rounded transition-colors">
+                                        Заказать
+                                    </a>
+                                    <form action="{{ route('cart.add', $service) }}" method="POST" class="flex-1">
+                                        @csrf
+                                        <button type="submit" class="w-full py-1 bg-white/5 hover:bg-white/10 text-white text-[10px] font-bold rounded border border-white/10 transition-colors">
+                                            В корзину
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
                             @endforeach
                         </div>
                     @endif

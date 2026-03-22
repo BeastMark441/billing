@@ -16,3 +16,6 @@ Schedule::command('billing:sync-status')->hourly();
 
 // Синхронизация платежей T-Bank, которые зависли в статусе ожидания (каждые 15 минут)
 Schedule::command('payments:sync-tbank')->everyFifteenMinutes();
+
+// Очистка брошенных корзин (ежедневно в полночь)
+Schedule::command('cart:cleanup')->daily();

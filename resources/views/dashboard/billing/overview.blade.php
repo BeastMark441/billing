@@ -1,102 +1,67 @@
 <x-app-layout>
-    <div class="space-y-8">
-        @if (session('success') || session('error') || $errors->any())
-            <div class="space-y-3">
-                @if (session('success'))
-                    <div class="bg-green-500/10 border border-green-500/20 text-green-200 px-4 py-3 rounded-xl">
-                        {{ session('success') }}
-                    </div>
-                @endif
-                @if (session('error'))
-                    <div class="bg-red-500/10 border border-red-500/20 text-red-200 px-4 py-3 rounded-xl">
-                        {{ session('error') }}
-                    </div>
-                @endif
-                @if ($errors->any())
-                    <div class="bg-red-500/10 border border-red-500/20 text-red-200 px-4 py-3 rounded-xl">
-                        Проверьте введённые данные.
-                    </div>
-                @endif
-            </div>
-        @endif
-
-        <div>
-            <h2 class="text-2xl font-bold text-white">Обзор биллинга</h2>
-            <p class="text-sm text-gray-400">Управление балансом и финансами.</p>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Balance Card -->
-            <div class="lg:col-span-2 bg-gradient-to-br from-[#0a0a0f] to-[#0f0f16] border border-white/10 rounded-xl p-8 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-64 h-64 bg-[#a6cb40]/5 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/3"></div>
-                
-                <div class="relative z-10">
-                    <div class="text-sm text-gray-400 mb-2">Текущий баланс</div>
-                    <div class="text-5xl font-bold text-white mb-8">{{ number_format($user->balance, 2, '.', ' ') }} ₽</div>
-                    
-                    <div class="flex flex-wrap gap-4">
-                        <button onclick="document.getElementById('topUpModal').classList.remove('hidden')" class="bg-[#a6cb40] hover:bg-[#8eb330] text-[#0a0a0f] px-6 py-3 rounded-lg font-bold transition-all shadow-[0_0_15px_rgba(166,203,64,0.2)] hover:shadow-[0_0_20px_rgba(166,203,64,0.4)] flex items-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                            Пополнить баланс
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-    <!-- Top Up Modal -->
-    <div id="topUpModal" class="{{ ($errors->has('amount') || session('error')) ? '' : 'hidden' }} fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-        <div class="bg-[#1a1a20] rounded-2xl max-w-md w-full p-6 border border-white/10">
-            <h3 class="text-xl font-bold text-white mb-4">Пополнение баланса</h3>
-            <p class="text-gray-400 text-sm mb-6">Введите сумму пополнения. Вы будете перенаправлены на защищенную страницу оплаты T-Bank.</p>
-            
-            <form method="POST" action="{{ route('payments.create') }}">
-                @csrf
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Сумма (₽)</label>
-                    <input type="number" name="amount" min="10" max="30000" step="1" required placeholder="500" 
-                           class="w-full bg-[#0a0a0f] border border-white/10 rounded-lg px-4 py-2 text-white text-lg font-bold focus:border-[#a6cb40] focus:ring focus:ring-[#a6cb40] focus:ring-opacity-50">
-                    @error('amount')
-                        <div class="mt-2 text-xs text-red-300">{{ $message }}</div>
-                    @enderror
-                    <div class="flex justify-between text-xs text-gray-500 mt-2">
-                        <span>Мин: 10 ₽</span>
-                        <span>Макс: 30 000 ₽</span>
-                    </div>
-                </div>
-                
-                <div class="flex justify-end gap-3">
-                    <button type="button" onclick="document.getElementById('topUpModal').classList.add('hidden')" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
-                        Отмена
-                    </button>
-                    <button type="submit" class="bg-[#a6cb40] hover:bg-[#8eb330] text-[#0a0a0f] font-bold py-2 px-6 rounded-lg transition-colors">
-                        Перейти к оплате
-                    </button>
-                </div>
-           </form>
-        </div>
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold text-white mb-2">Финансы</h2>
+        <p class="text-gray-400">Управление балансом и история операций</p>
     </div>
 
-            <!-- Promo Code Card -->
-            <div class="bg-[#050508] border border-white/10 rounded-xl p-6 flex flex-col justify-center">
-                <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-[#a6cb40]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
-                    Активация промокода
-                </h3>
-                <p class="text-sm text-gray-400 mb-4">
-                    Есть промокод? Введите его ниже, чтобы получить бонус на баланс или скидку.
-                </p>
-                <div class="flex gap-2">
-                    <input type="text" placeholder="PROMO2025" class="w-full bg-[#0a0a0f] border border-white/10 rounded-lg px-4 py-2 text-white focus:border-[#a6cb40] focus:ring focus:ring-[#a6cb40] focus:ring-opacity-50 text-sm placeholder-gray-600">
-                    <button class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+    @if(session('success'))
+        <div class="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-xl mb-6">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-6">
+            {{ session('error') }}
+        </div>
+    @endif
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <!-- Balance Card -->
+        <div class="bg-[#0f0f13] border border-white/5 rounded-2xl p-8 flex flex-col justify-between">
+            <div>
+                <div class="text-gray-500 text-sm font-medium uppercase tracking-wider mb-1">Текущий баланс</div>
+                <div class="text-4xl font-bold text-white font-mono">{{ number_format(Auth::user()->balance, 2, '.', ' ') }} ₽</div>
+            </div>
+            <div class="mt-6">
+                <p class="text-xs text-gray-500 italic">Средства списываются автоматически при продлении активных услуг.</p>
+            </div>
+        </div>
+
+        <!-- Top up Card -->
+        <div class="lg:col-span-2 bg-[#0f0f13] border border-white/5 rounded-2xl p-8">
+            <h3 class="text-xl font-bold text-white mb-6">Пополнить баланс</h3>
+            
+            <form action="{{ route('payments.create') }}" method="POST" class="max-w-md">
+                @csrf
+                <div class="flex flex-col md:flex-row gap-4">
+                    <div class="flex-1 relative">
+                        <input type="number" name="amount" min="10" step="1" required placeholder="Сумма (₽)" 
+                               class="w-full bg-[#050508] border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-lg focus:outline-none focus:border-[#a6cb40] transition-colors appearance-none">
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-mono">₽</span>
+                    </div>
+                    <button type="submit" class="bg-[#a6cb40] hover:bg-[#bbe053] text-[#0a0a0f] font-bold px-8 py-3 rounded-xl transition-all shadow-lg shadow-[#a6cb40]/10 flex items-center justify-center gap-2">
+                        <span>Пополнить</span>
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
                     </button>
                 </div>
-            </div>
+                <div class="mt-4 flex flex-wrap gap-3">
+                    <button type="button" onclick="this.form.amount.value=100" class="px-3 py-1 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg text-xs transition-colors border border-white/5">100 ₽</button>
+                    <button type="button" onclick="this.form.amount.value=500" class="px-3 py-1 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg text-xs transition-colors border border-white/5">500 ₽</button>
+                    <button type="button" onclick="this.form.amount.value=1000" class="px-3 py-1 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg text-xs transition-colors border border-white/5">1000 ₽</button>
+                    <button type="button" onclick="this.form.amount.value=5000" class="px-3 py-1 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg text-xs transition-colors border border-white/5">5000 ₽</button>
+                </div>
+                <p class="mt-6 text-xs text-gray-500 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04m17.236 0a11.955 11.955 0 01-8.618 3.04m-7.236 0A11.955 11.955 0 0112 2.944a11.955 11.955 0 018.618 3.04M12 10a2 2 0 110-4 2 2 0 010 4zm0 0v10m0 0l-4-4m4 4l4-4"></path></svg>
+                    Оплата через защищенный шлюз T-Bank. Комиссия 0%.
+                </p>
+            </form>
         </div>
+    </div>
 
-        <!-- Expenses Section -->
-        <div class="space-y-4">
-            <div class="flex items-center justify-between">
+    <div class="space-y-8">
+        <div class="bg-[#0f0f13] border border-white/5 rounded-2xl overflow-hidden">
+            <div class="px-8 py-6 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h3 class="text-lg font-bold text-white">История финансов</h3>
                 
                 <!-- Filters -->
@@ -229,31 +194,8 @@
                                         <td class="px-6 py-4 whitespace-nowrap">{{ $payment->created_at->format('d.m.Y H:i') }}</td>
                                         <td class="px-6 py-4 font-medium text-white">Пополнение баланса (T-Bank)</td>
                                         <td class="px-6 py-4">
-                                            @php
-                                                $status = strtoupper((string) $payment->status);
-                                                $statusLabels = [
-                                                    'PENDING' => 'В обработке',
-                                                    'NEW' => 'Новый',
-                                                    'AUTHORIZED' => 'Ожидает списания',
-                                                    'CONFIRMED' => 'Подтвержден',
-                                                    'REJECTED' => 'Отклонен',
-                                                    'CANCELED' => 'Отменен',
-                                                    'ERROR' => 'Ошибка',
-                                                    'REFUNDED' => 'Возвращен',
-                                                ];
-                                                $statusColors = [
-                                                    'PENDING' => 'bg-yellow-500/10 text-yellow-300',
-                                                    'NEW' => 'bg-blue-500/10 text-blue-300',
-                                                    'REJECTED' => 'bg-red-500/10 text-red-400',
-                                                    'CANCELED' => 'bg-gray-500/10 text-gray-400',
-                                                    'ERROR' => 'bg-red-500/10 text-red-400',
-                                                    'CONFIRMED' => 'bg-green-500/10 text-green-400',
-                                                ];
-                                                $label = $statusLabels[$status] ?? $status;
-                                                $color = $statusColors[$status] ?? 'bg-gray-500/10 text-gray-300';
-                                            @endphp
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $color }}">
-                                                {{ $label }}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $payment->status_color }}">
+                                                {{ $payment->status_label }}
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 text-right font-bold text-yellow-300">+{{ number_format((float) $payment->amount, 2, '.', ' ') }} ₽</td>

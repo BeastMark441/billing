@@ -1,33 +1,39 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\FinanceController as AdminFinanceController;
 use App\Http\Controllers\Admin\InfrastructureCategoryController as AdminInfrastructureCategoryController;
 use App\Http\Controllers\Admin\InfrastructureServiceController as AdminInfrastructureServiceController;
 use App\Http\Controllers\Admin\InfrastructureSubcategoryController as AdminInfrastructureSubcategoryController;
 use App\Http\Controllers\Admin\LogController as AdminLogController;
+use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\TicketController as AdminTicketController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicReceiptController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\SeoController;
+use App\Http\Controllers\TBankApiController;
 use App\Http\Controllers\TelegramIntegrationController;
 use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\TicketController;
-use App\Http\Controllers\TBankApiController;
 use Illuminate\Support\Facades\Route;
 
+// Public Pages
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
-Route::get('/robots.txt', [SeoController::class, 'robots'])->name('robots');
+// Categories & Products (Public)
+Route::get('/categories/{slug}', [PageController::class, 'category'])->name('categories.show');
+Route::get('/categories/{slug}/{subSlug}', [PageController::class, 'subcategory'])->name('categories.subcategory');
 
-// Static Pages
 Route::get('/products', [PageController::class, 'products'])->name('products');
 Route::get('/products/{category:slug}', [PageController::class, 'productCategory'])->name('products.category');
 Route::get('/products/{category:slug}/{service:slug}', [PageController::class, 'productService'])->name('products.service');
@@ -43,10 +49,16 @@ Route::get('/api-docs', [PageController::class, 'apiDocs'])->name('api-docs');
 Route::get('/legal', [PageController::class, 'legal'])->name('legal');
 Route::get('/legal/{doc}', [PageController::class, 'legalDoc'])->name('legal.doc');
 
+// SEO
+Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
+Route::get('/robots.txt', [SeoController::class, 'robots'])->name('robots');
+
+// Public Receipts
 Route::get('/r/{receipt}/{token}', [PublicReceiptController::class, 'show'])->name('receipts.public.show');
 Route::get('/r/{receipt}/{token}/download', [PublicReceiptController::class, 'download'])->name('receipts.public.download');
 Route::get('/r/{receipt}/{token}/verify', [PublicReceiptController::class, 'verify'])->name('receipts.public.verify');
 
+// Authenticated User Routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -66,9 +78,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Billing
     Route::get('/dashboard/billing', [BillingController::class, 'index'])->name('dashboard.billing');
-    // Deprecated route, redirect to overview
-    Route::get('/dashboard/billing/expenses', [BillingController::class, 'expenses'])->name('dashboard.billing.expenses');
-
+    
     // Help / Tickets
     Route::get('/dashboard/tickets', [TicketController::class, 'index'])->name('dashboard.tickets.index');
     Route::get('/dashboard/tickets/create', [TicketController::class, 'create'])->name('dashboard.tickets.create');
@@ -78,23 +88,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/dashboard/tickets/messages/{message}', [TicketController::class, 'updateMessage'])->name('dashboard.tickets.message.update');
     Route::delete('/dashboard/tickets/messages/{message}', [TicketController::class, 'deleteMessage'])->name('dashboard.tickets.message.destroy');
 
-    // System Status (Placeholder view)
-    Route::get('/dashboard/status', function () {
-        return view('dashboard.status');
-    })->name('dashboard.status');
-
     // Notifications
-    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
-    Route::get('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
-    Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
-    Route::delete('/notifications/{id}', [\App\Http\Controllers\NotificationController::class, 'destroy'])->name('notifications.delete');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.delete');
 
-    // Orders
-    Route::resource('orders', \App\Http\Controllers\OrderController::class)->only(['index', 'show']);
-    Route::get('/infrastructure/services/{service}/order', [\App\Http\Controllers\OrderController::class, 'create'])->name('orders.create');
-    Route::post('/infrastructure/services/{service}/order', [\App\Http\Controllers\OrderController::class, 'store'])->name('orders.store');
-    Route::post('/orders/{order}/auto-renewal', [\App\Http\Controllers\OrderController::class, 'toggleAutoRenewal'])->name('orders.auto-renewal');
-    Route::post('/orders/{order}/renew', [\App\Http\Controllers\OrderController::class, 'renew'])->name('orders.renew');
+    // Orders & Ordering (Dashboard context)
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::get('/dashboard/infrastructure/services/{service}/order', [OrderController::class, 'create'])->name('orders.create');
+    Route::post('/dashboard/infrastructure/services/{service}/order', [OrderController::class, 'store'])->name('orders.store');
+    Route::post('/orders/{order}/auto-renewal', [OrderController::class, 'toggleAutoRenewal'])->name('orders.auto-renewal');
+    Route::post('/orders/{order}/renew', [OrderController::class, 'renew'])->name('orders.renew');
+
+    // Cart
+    Route::get('/dashboard/cart', [CartController::class, 'index'])->name('cart.index');
+    Route::post('/infrastructure/services/{service}/cart', [CartController::class, 'add'])->name('cart.add');
+    Route::delete('/dashboard/cart/{order}', [CartController::class, 'remove'])->name('cart.remove');
+    Route::post('/dashboard/cart/{order}/checkout', [CartController::class, 'checkout'])->name('cart.checkout');
 
     // Payments
     Route::post('/payments/create', [TBankApiController::class, 'store'])->name('payments.create');
@@ -107,6 +119,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/receipts/{receipt}/download', [ReceiptController::class, 'download'])->name('dashboard.receipts.download');
 });
 
+// Webhooks (Public)
 Route::post('/payments/webhook', [TBankApiController::class, 'webhook'])->name('payments.webhook');
 Route::post('/telegram/webhook', TelegramWebhookController::class)->name('telegram.webhook');
 
@@ -114,10 +127,7 @@ Route::post('/telegram/webhook', TelegramWebhookController::class)->name('telegr
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
 
-    Route::get('/logs', [AdminLogController::class, 'index'])->name('logs.index');
-    Route::delete('/logs/user', [AdminLogController::class, 'destroyUser'])->middleware('superadmin')->name('logs.user.destroy');
-    Route::delete('/logs', [AdminLogController::class, 'destroyAll'])->middleware('superadmin')->name('logs.destroy');
-
+    // Admin Users Management
     Route::resource('users', AdminUserController::class);
     Route::post('users/{user}/balance', [AdminUserController::class, 'updateBalance'])->name('users.balance');
     Route::post('users/{user}/verify-email', [AdminUserController::class, 'verifyEmail'])->name('users.verify-email');
@@ -126,8 +136,8 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::post('users/{user}/ban-ip', [AdminUserController::class, 'banIp'])->name('users.ban-ip');
     Route::post('users/{user}/notify', [AdminUserController::class, 'notifyUser'])->name('users.notify');
 
-    // Admin Tickets
-    Route::resource('tickets', AdminTicketController::class)->only(['index', 'show', 'update', 'destroy']);
+    // Admin Tickets (Support)
+    Route::resource('tickets', AdminTicketController::class);
     Route::post('tickets/{ticket}/reply', [AdminTicketController::class, 'reply'])->name('tickets.reply');
     Route::put('tickets/messages/{message}', [AdminTicketController::class, 'updateMessage'])->name('tickets.message.update');
     Route::delete('tickets/messages/{message}', [AdminTicketController::class, 'deleteMessage'])->name('tickets.message.destroy');
@@ -142,7 +152,6 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
         'destroy' => 'infrastructure.categories.destroy',
     ]);
 
-    // Infrastructure Subcategories
     Route::resource('infrastructure/subcategories', AdminInfrastructureSubcategoryController::class)->names([
         'index' => 'infrastructure.subcategories.index',
         'create' => 'infrastructure.subcategories.create',
@@ -152,7 +161,6 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
         'destroy' => 'infrastructure.subcategories.destroy',
     ]);
 
-    // Infrastructure Services
     Route::resource('infrastructure/services', AdminInfrastructureServiceController::class)->names([
         'index' => 'infrastructure.services.index',
         'create' => 'infrastructure.services.create',
@@ -163,6 +171,8 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     ]);
 
     // Orders Management
+    Route::get('orders/cart', [\App\Http\Controllers\Admin\OrderController::class, 'cartIndex'])->name('orders.cart.index');
+    
     Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class)->names([
         'index' => 'orders.index',
         'create' => 'orders.create',
@@ -179,6 +189,9 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/finance', [\App\Http\Controllers\Admin\FinanceController::class, 'index'])->name('finance.index');
     Route::delete('/finance', [\App\Http\Controllers\Admin\FinanceController::class, 'destroyFiltered'])->middleware('superadmin')->name('finance.destroy');
     Route::delete('/finance/{log}', [\App\Http\Controllers\Admin\FinanceController::class, 'destroy'])->middleware('superadmin')->name('finance.logs.destroy');
+
+    // Admin Logs
+    Route::get('/logs', [AdminLogController::class, 'index'])->name('logs.index');
 });
 
 require __DIR__.'/auth.php';

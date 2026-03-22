@@ -55,6 +55,9 @@
         <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     </head>
     <body class="font-sans antialiased bg-[#0a0a0f] text-white">
+        @php
+            $cartCount = Auth::user()->orders()->where('status', 'cart')->count();
+        @endphp
         <div class="min-h-screen bg-[#0a0a0f]">
             <!-- Sidebar -->
             <aside class="fixed inset-y-0 left-0 z-50 w-64 bg-[#050508] border-r border-white/10 hidden md:flex flex-col transition-transform duration-300">
@@ -110,7 +113,7 @@
                     <!-- Help Section (Dropdown) -->
                     <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2 mt-6">Поддержка</div>
 
-                    <div x-data="{ open: {{ request()->is('dashboard/tickets*') || request()->is('dashboard/status') ? 'true' : 'false' }} }">
+                    <div x-data="{ open: {{ request()->is('dashboard/tickets*') || request()->is('status') ? 'true' : 'false' }} }">
                         <button @click="open = !open" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors">
                             <div class="flex items-center gap-3">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
@@ -129,7 +132,7 @@
                             <a href="{{ route('dashboard.tickets.index') }}" class="block py-2 text-sm text-gray-400 hover:text-[#a6cb40] transition-colors {{ request()->routeIs('dashboard.tickets.index') && !request()->has('status') ? 'text-[#a6cb40]' : '' }}">
                                 Все тикеты
                             </a>
-                            <a href="{{ route('dashboard.status') }}" class="block py-2 text-sm text-gray-400 hover:text-[#a6cb40] transition-colors {{ request()->routeIs('dashboard.status') ? 'text-[#a6cb40]' : '' }}">
+                            <a href="{{ route('status') }}" class="block py-2 text-sm text-gray-400 hover:text-[#a6cb40] transition-colors {{ request()->routeIs('status') ? 'text-[#a6cb40]' : '' }}">
                                 Статус систем
                             </a>
                         </div>
@@ -154,15 +157,25 @@
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between gap-2">
                                 <div class="text-sm font-medium text-white truncate">{{ Auth::user()->name }}</div>
-                                <div class="relative" x-data="{ open: false }">
-                                    <button @click="open = !open" @click.away="open = false" class="text-gray-400 hover:text-white relative p-2 rounded-full hover:bg-white/5 transition-colors">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                                        @if(Auth::user()->unreadNotifications->count() > 0)
-                                            <span class="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-[#050508]">
-                                                {{ Auth::user()->unreadNotifications->count() }}
+                                <div class="flex items-center gap-2">
+                                    <a href="{{ route('cart.index') }}" class="text-gray-400 hover:text-[#a6cb40] relative p-2 rounded-full hover:bg-white/5 transition-colors" title="Корзина">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                        @if($cartCount > 0)
+                                            <span class="absolute top-1 right-1 bg-[#a6cb40] text-[#0a0a0f] text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-[#050508]">
+                                                {{ $cartCount }}
                                             </span>
                                         @endif
-                                    </button>
+                                    </a>
+
+                                    <div class="relative" x-data="{ open: false }">
+                                        <button @click="open = !open" @click.away="open = false" class="text-gray-400 hover:text-white relative p-2 rounded-full hover:bg-white/5 transition-colors">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                                            @if(Auth::user()->unreadNotifications->count() > 0)
+                                                <span class="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-[#050508]">
+                                                    {{ Auth::user()->unreadNotifications->count() }}
+                                                </span>
+                                            @endif
+                                        </button>
 
                                     <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="transform opacity-100 scale-100" x-transition:leave-end="transform opacity-0 scale-95" class="absolute bottom-12 left-full ml-3 w-[min(20rem,calc(100vw-1.5rem))] bg-[#1a1a20] border border-white/10 rounded-xl shadow-xl py-2 z-50 origin-bottom-left" style="display: none;">
                                         <div class="px-4 py-3 border-b border-white/10 flex justify-between items-center">
@@ -225,11 +238,12 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="text-xs text-gray-500 truncate">{{ Auth::user()->email }}</div>
                         </div>
+                        <div class="text-xs text-gray-500 truncate">{{ Auth::user()->email }}</div>
                     </div>
                 </div>
-            </aside>
+            </div>
+        </aside>
 
             <!-- Main Content -->
             <div class="flex flex-col min-h-screen md:pl-64 transition-all duration-300">
@@ -241,9 +255,19 @@
                         </svg>
                         <span class="font-bold text-xl tracking-tight text-white">NODEUM</span>
                     </a>
-                    <button onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" class="text-gray-400 hover:text-white">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                    </button>
+                    <div class="flex items-center gap-4">
+                        <a href="{{ route('cart.index') }}" class="text-gray-400 hover:text-[#a6cb40] relative p-1 transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            @if($cartCount > 0)
+                                <span class="absolute -top-1 -right-1 bg-[#a6cb40] text-[#0a0a0f] text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-[#050508]">
+                                    {{ $cartCount }}
+                                </span>
+                            @endif
+                        </a>
+                        <button onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" class="text-gray-400 hover:text-white">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                        </button>
+                    </div>
                 </header>
 
                 <!-- Mobile Menu -->
@@ -260,7 +284,7 @@
                      <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">Помощь</div>
                      <a href="{{ route('dashboard.tickets.create') }}" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white">Создать тикет</a>
                      <a href="{{ route('dashboard.tickets.index') }}" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white">Мои тикеты</a>
-                     <a href="{{ route('dashboard.status') }}" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white">Статус систем</a>
+                     <a href="{{ route('status') }}" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white">Статус систем</a>
 
                      <div class="border-t border-white/10 my-2"></div>
                      <form method="POST" action="{{ route('logout') }}">

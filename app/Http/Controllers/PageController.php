@@ -3,11 +3,63 @@
 namespace App\Http\Controllers;
 
 use App\Models\InfrastructureCategory;
+use App\Models\InfrastructureSubcategory;
 use App\Models\InfrastructureService;
 use Illuminate\Http\Request;
 
 class PageController extends Controller
 {
+    public function category($slug)
+    {
+        $category = InfrastructureCategory::where('slug', $slug)->where('is_active', true)->firstOrFail();
+        $subcategories = $category->subcategories()->where('is_active', true)->orderBy('sort_order')->get();
+
+        return view('pages.category', [
+            'category' => $category,
+            'subcategories' => $subcategories,
+            'meta_title' => $category->name . ' - NODEUM',
+            'meta_description' => $category->description,
+        ]);
+    }
+
+    public function subcategory(Request $request, $slug, $subSlug)
+    {
+        $category = InfrastructureCategory::where('slug', $slug)->where('is_active', true)->firstOrFail();
+        $subcategory = $category->subcategories()->where('slug', $subSlug)->where('is_active', true)->firstOrFail();
+        
+        $query = $subcategory->services()->where('is_active', true);
+
+        // Filters
+        if ($request->has('min_price')) {
+            $query->where('price', '>=', $request->min_price);
+        }
+        if ($request->has('max_price')) {
+            $query->where('price', '<=', $request->max_price);
+        }
+        
+        $sort = $request->get('sort', 'price_asc');
+        switch ($sort) {
+            case 'price_desc':
+                $query->orderBy('price', 'desc');
+                break;
+            case 'name_asc':
+                $query->orderBy('name', 'asc');
+                break;
+            default:
+                $query->orderBy('price', 'asc');
+        }
+
+        $services = $query->get();
+
+        return view('pages.subcategory', [
+            'category' => $category,
+            'subcategory' => $subcategory,
+            'services' => $services,
+            'meta_title' => $subcategory->name . ' - ' . $category->name . ' - NODEUM',
+            'meta_description' => $subcategory->description,
+        ]);
+    }
+
     public function products(Request $request)
     {
         $categories = InfrastructureCategory::query()

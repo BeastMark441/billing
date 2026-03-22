@@ -4,9 +4,9 @@
             <h1 class="text-3xl font-bold text-white mb-2">Пользователи</h1>
             <p class="text-gray-400">Управление пользователями системы</p>
         </div>
-        <!-- <a href="{{ route('admin.users.create') }}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+        <a href="{{ route('admin.users.create') }}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
             Добавить пользователя
-        </a> -->
+        </a>
     </div>
 
     <div class="bg-[#0f0f13] border border-white/5 rounded-2xl overflow-hidden">

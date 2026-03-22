@@ -19,7 +19,7 @@ class OrderController extends Controller
 
     public function index(Request $request)
     {
-        $query = Order::with(['user', 'service']);
+        $query = Order::with(['user', 'service'])->where('status', '!=', 'cart');
 
         // Filters
         if ($request->has('status') && $request->status) {
@@ -41,6 +41,26 @@ class OrderController extends Controller
         $orders = $query->latest()->paginate(20);
 
         return view('admin.orders.index', compact('orders'));
+    }
+
+    public function cartIndex(Request $request)
+    {
+        $query = Order::with(['user', 'service'])->where('status', 'cart');
+
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('id', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($q) use ($search) {
+                        $q->where('email', 'like', "%{$search}%")
+                            ->orWhere('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $orders = $query->latest()->paginate(20);
+
+        return view('admin.orders.cart', compact('orders'));
     }
 
     public function create()

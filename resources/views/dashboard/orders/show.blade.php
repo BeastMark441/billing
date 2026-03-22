@@ -9,6 +9,7 @@
                 
                 @php
                     $statusClasses = [
+                        'cart' => 'bg-yellow-500/10 text-yellow-500',
                         'pending' => 'bg-yellow-500/10 text-yellow-500',
                         'paid' => 'bg-blue-500/10 text-blue-500',
                         'active' => 'bg-green-500/10 text-green-500',
@@ -17,6 +18,7 @@
                         'failed' => 'bg-red-500/10 text-red-500',
                     ];
                     $statusLabels = [
+                        'cart' => 'В корзине',
                         'pending' => 'Ожидает оплаты',
                         'paid' => 'Оплачен',
                         'active' => 'Активен',
@@ -135,8 +137,19 @@
             <div class="bg-[#0f0f13] border border-white/5 rounded-2xl p-6">
                 <h3 class="text-lg font-bold text-white mb-4">Управление</h3>
                 <div class="space-y-3">
+                    @if($order->status === 'cart')
+                    <div class="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                        <p class="text-sm text-yellow-500">
+                            Этот заказ находится в корзине. Оплатите его, чтобы получить доступ к управлению услугой.
+                        </p>
+                    </div>
+                    <a href="{{ route('cart.index') }}" class="block w-full text-center px-4 py-3 bg-[#a6cb40] hover:bg-[#bbe053] text-[#0a0a0f] font-bold rounded-lg transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        Перейти к оформлению
+                    </a>
+                    @else
                     <!-- Auto Renewal Toggle (Only if NOT cancelled/failed) -->
-                    @if(!in_array($order->status, ['cancelled', 'failed']))
+                    @if(!in_array($order->status, ['cancelled', 'failed', 'cart']))
                     <form method="POST" action="{{ route('orders.auto-renewal', $order) }}" class="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5">
                         @csrf
                         <div class="text-sm font-medium text-white">Автопродление</div>
@@ -166,7 +179,7 @@
                     </a>
 
                     <!-- Request Cancellation (Only if not already cancelled/failed) -->
-                    @if(!in_array($order->status, ['cancelled', 'failed']))
+                    @if(!in_array($order->status, ['cancelled', 'failed', 'cart']))
                     <a href="{{ route('dashboard.tickets.create', ['order_id' => $order->id, 'subject' => 'Отмена/Возврат заказа #' . $order->id]) }}" class="block w-full text-center px-4 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         Запросить отмену
@@ -177,6 +190,7 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                         Смена тарифа
                     </a>
+                    @endif
                     @endif
                 </div>
             </div>
@@ -220,6 +234,7 @@
             </div>
 
             <!-- Status History -->
+            @if($order->statusHistory->count() > 0)
             <div class="bg-[#0f0f13] border border-white/5 rounded-2xl p-6">
                 <h3 class="text-lg font-bold text-white mb-4">История статусов</h3>
                 <div class="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-white/10 before:to-transparent max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
@@ -253,6 +268,7 @@
                     @endforeach
                 </div>
             </div>
+            @endif
         </div>
     </div>
     <!-- Renew Confirmation Modal -->

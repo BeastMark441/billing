@@ -20,9 +20,39 @@ class TicketController extends Controller
      */
     public function index()
     {
-        $tickets = Ticket::with('user')->latest()->paginate(10);
+        $tickets = Ticket::with('user')->latest()->paginate(20);
 
         return view('admin.tickets.index', compact('tickets'));
+    }
+
+    public function create()
+    {
+        return view('admin.tickets.create');
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'subject' => 'required|string|max:255',
+            'message' => 'required|string',
+            'priority' => 'required|in:low,medium,high',
+            'status' => 'required|in:open,pending,closed',
+        ]);
+
+        $ticket = Ticket::create([
+            'user_id' => $validated['user_id'],
+            'subject' => $validated['subject'],
+            'priority' => $validated['priority'],
+            'status' => $validated['status'],
+        ]);
+
+        $ticket->messages()->create([
+            'user_id' => Auth::id(),
+            'message' => $validated['message'],
+        ]);
+
+        return redirect()->route('admin.tickets.index')->with('success', 'Тикет успешно создан.');
     }
 
     /**

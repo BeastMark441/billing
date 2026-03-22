@@ -24,6 +24,15 @@
         </form>
     </div>
 
+    <div class="flex border-b border-white/5 mb-8">
+        <a href="{{ route('admin.orders.index') }}" class="px-6 py-3 text-sm font-medium border-b-2 {{ request()->routeIs('admin.orders.index') ? 'border-blue-500 text-white' : 'border-transparent text-gray-500 hover:text-white' }}">
+            Все заказы
+        </a>
+        <a href="{{ route('admin.orders.cart.index') }}" class="px-6 py-3 text-sm font-medium border-b-2 {{ request()->routeIs('admin.orders.cart.index') ? 'border-blue-500 text-white' : 'border-transparent text-gray-500 hover:text-white' }}">
+            В Корзине
+        </a>
+    </div>
+
     <!-- Failed Orders Alert -->
     @if($orders->where('status', 'failed')->count() > 0)
     <div class="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 mb-8">

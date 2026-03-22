@@ -97,6 +97,17 @@
                     @auth
                         <!-- Authenticated User -->
                         <div class="hidden lg:flex items-center gap-4 border-r border-white/10 pr-4 mr-1">
+                             <a href="{{ route('cart.index') }}" class="text-gray-400 hover:text-[#a6cb40] relative p-2 rounded-full hover:bg-white/5 transition-colors" title="Корзина">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                @php
+                                    $cartCount = Auth::user()->orders()->where('status', 'cart')->count();
+                                @endphp
+                                @if($cartCount > 0)
+                                    <span class="absolute top-0 right-0 bg-[#a6cb40] text-[#0a0a0f] text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-[#0a0a0f]">
+                                        {{ $cartCount }}
+                                    </span>
+                                @endif
+                             </a>
                              <a href="{{ route('dashboard.tickets.create') }}" class="text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                                 Поддержка

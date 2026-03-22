@@ -87,7 +87,9 @@
                                     <a href="{{ route('orders.show', $order) }}" class="text-white hover:underline">#{{ $order->id }}</a>
                                 </td>
                                 <td class="px-4 py-3 text-gray-300">{{ $order->service->name ?? '—' }}</td>
-                                <td class="px-4 py-3 text-gray-300">{{ $order->status }}</td>
+                                <td class="px-4 py-3 text-gray-300">
+                                    <span class="{{ $order->status_color }}">{{ $order->status_label }}</span>
+                                </td>
                                 <td class="px-4 py-3 text-gray-400">{{ $order->created_at->format('d.m.Y H:i') }}</td>
                             </tr>
                         @empty
