@@ -31,46 +31,17 @@
 ## Переменные окружения
 
 Обязательные:
-* `TBANK_TERMINAL_KEY`
-* `TBANK_PASSWORD`
-* `TBANK_API_URL` (обычно `https://securepay.tinkoff.ru/v2/`)
+* `TBANK_API_TOKEN` — Bearer токен для T-API (Open API).
+* `TBANK_INN`, `TBANK_KPP`, `TBANK_ACCOUNT` — реквизиты вашей компании.
+* `TBANK_SIGNATURE_KEY` — открытый ключ RSA для верификации `x-signature`.
+* `TBANK_API_URL` (обычно `https://business.tbank.ru/openapi/api/v1/`)
 
-Рекомендуемые:
-* `TBANK_WEBHOOK_URL` — внешний публичный URL для `NotificationURL`.
-  Полезно, если `APP_URL` в окружении не совпадает с публичным доменом.
-
-## Локальная разработка
-
-Для приема webhook нужен публичный HTTPS URL.
-
-Пример через ngrok:
-```bash
-ngrok http 8000
-```
-
-После запуска:
-* выставить `APP_URL` и `TBANK_WEBHOOK_URL` на HTTPS URL ngrok,
-* убедиться, что `POST {ngrok}/payments/webhook` доступен снаружи.
-
-## Диагностика и команды
-
-### Дожать pending платежи
-
-Команда опрашивает `GetState` и применяет статус к `payments` (а при `CONFIRMED` — начисляет баланс и создаёт `balance_logs`).
-
-* Проверить все pending платежи:
-```bash
-php artisan payments:reconcile-tbank --minutes=0 --limit=50
-```
-
-* Проверить только платежи старше 5 минут:
-```bash
-php artisan payments:reconcile-tbank --minutes=5 --limit=50
-```
+## Диагностика
 
 ### Что проверять, если платежи не зачисляются
 
-* Проверь, что `NotificationURL` реально указывает на публичный `/payments/webhook`.
-* Проверь, что приложение отвечает банку `2XX`.
+* Проверь, что `x-signature` передается в вебхуке.
+* Проверь корректность RSA ключа в `TBANK_SIGNATURE_KEY`.
 * Посмотри `AuditLog` по событиям `payment_*` и логи приложения.
+* Проверь, что `TBANK_API_TOKEN` не просрочен.
 

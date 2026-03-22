@@ -110,42 +110,6 @@
                 </form>
             </div>
 
-            @if(isset($pendingPayments) && $pendingPayments->count() > 0)
-                <div class="bg-yellow-500/10 border border-yellow-500/20 text-yellow-200 px-4 py-3 rounded-xl">
-                    <div class="font-semibold">Есть платежи в обработке</div>
-                    <div class="mt-1 text-sm text-yellow-200/80">Платёж появится на балансе после подтверждения банка. Если в течении 30 минут статус не изменится, он обратитесь в поддержку.</div>
-                </div>
-
-                <div class="bg-[#050508] border border-white/10 rounded-xl overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm text-gray-400">
-                            <thead class="bg-white/5 text-gray-200 uppercase text-xs">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3">Дата</th>
-                                    <th scope="col" class="px-6 py-3">Описание</th>
-                                    <th scope="col" class="px-6 py-3">Статус</th>
-                                    <th scope="col" class="px-6 py-3 text-right">Сумма</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-white/5">
-                                @foreach($pendingPayments as $payment)
-                                    <tr class="hover:bg-white/5 transition-colors">
-                                        <td class="px-6 py-4 whitespace-nowrap">{{ $payment->created_at->format('d.m.Y H:i') }}</td>
-                                        <td class="px-6 py-4 font-medium text-white">Пополнение баланса (в обработке)</td>
-                                        <td class="px-6 py-4">
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-300">
-                                                {{ strtoupper((string) $payment->status) }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 text-right font-bold text-yellow-300">+{{ number_format((float) $payment->amount, 2, '.', ' ') }} ₽</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            @endif
-
             <div class="bg-[#050508] border border-white/10 rounded-xl overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm text-gray-400">
@@ -170,6 +134,7 @@
                                     @php
                                         $typeColors = [
                                             'admin_deposit' => 'bg-green-500/10 text-green-500',
+                                            'deposit' => 'bg-green-500/10 text-green-500',
                                             'bonus' => 'bg-purple-500/10 text-purple-500',
                                             'refund' => 'bg-blue-500/10 text-blue-500',
                                             'correction' => 'bg-yellow-500/10 text-yellow-500',
@@ -203,20 +168,103 @@
                             @empty
                             <tr>
                                 <td colspan="4" class="px-6 py-12 text-center text-gray-500">
-                                    Операций за выбранный период не найдено.
+                                    <div class="flex flex-col items-center">
+                                        <svg class="w-12 h-12 mb-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                        <p>История операций пуста</p>
+                                    </div>
                                 </td>
                             </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
-                
-                @if($transactions->hasPages())
-                <div class="p-4 border-t border-white/10">
+
+                @if ($transactions->hasPages())
+                <div class="px-6 py-4 bg-white/5 border-t border-white/5">
                     {{ $transactions->links() }}
                 </div>
                 @endif
             </div>
         </div>
+
+        <!-- Pending Payments (Collapsible) -->
+        @if(isset($pendingPayments) && $pendingPayments->count() > 0)
+        <div x-data="{ open: false }" class="space-y-4">
+            <button @click="open = !open" class="flex items-center justify-between w-full bg-[#0a0a0f] border border-white/10 rounded-xl px-6 py-4 text-left transition-colors hover:bg-white/5">
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span class="absolute -top-1 -right-1 flex h-3 w-3">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
+                        </span>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Платежи в обработке</h3>
+                        <p class="text-xs text-gray-500">Ожидают подтверждения от банка ({{ $pendingPayments->count() }})</p>
+                    </div>
+                </div>
+                <svg :class="{'rotate-180': open}" class="w-5 h-5 text-gray-500 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+
+            <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0" class="space-y-4">
+                <div class="bg-yellow-500/10 border border-yellow-500/20 text-yellow-200 px-4 py-3 rounded-xl text-sm">
+                    Платёж появится на балансе после подтверждения банка. Если в течение 30 минут статус не изменится, обратитесь в поддержку.
+                </div>
+
+                <div class="bg-[#050508] border border-white/10 rounded-xl overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-gray-400">
+                            <thead class="bg-white/5 text-gray-200 uppercase text-xs">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">Дата</th>
+                                    <th scope="col" class="px-6 py-3">Описание</th>
+                                    <th scope="col" class="px-6 py-3">Статус</th>
+                                    <th scope="col" class="px-6 py-3 text-right">Сумма</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5">
+                                @foreach($pendingPayments as $payment)
+                                    <tr class="hover:bg-white/5 transition-colors">
+                                        <td class="px-6 py-4 whitespace-nowrap">{{ $payment->created_at->format('d.m.Y H:i') }}</td>
+                                        <td class="px-6 py-4 font-medium text-white">Пополнение баланса (T-Bank)</td>
+                                        <td class="px-6 py-4">
+                                            @php
+                                                $status = strtoupper((string) $payment->status);
+                                                $statusLabels = [
+                                                    'PENDING' => 'В обработке',
+                                                    'NEW' => 'Новый',
+                                                    'AUTHORIZED' => 'Ожидает списания',
+                                                    'CONFIRMED' => 'Подтвержден',
+                                                    'REJECTED' => 'Отклонен',
+                                                    'CANCELED' => 'Отменен',
+                                                    'ERROR' => 'Ошибка',
+                                                    'REFUNDED' => 'Возвращен',
+                                                ];
+                                                $statusColors = [
+                                                    'PENDING' => 'bg-yellow-500/10 text-yellow-300',
+                                                    'NEW' => 'bg-blue-500/10 text-blue-300',
+                                                    'REJECTED' => 'bg-red-500/10 text-red-400',
+                                                    'CANCELED' => 'bg-gray-500/10 text-gray-400',
+                                                    'ERROR' => 'bg-red-500/10 text-red-400',
+                                                    'CONFIRMED' => 'bg-green-500/10 text-green-400',
+                                                ];
+                                                $label = $statusLabels[$status] ?? $status;
+                                                $color = $statusColors[$status] ?? 'bg-gray-500/10 text-gray-300';
+                                            @endphp
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $color }}">
+                                                {{ $label }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-right font-bold text-yellow-300">+{{ number_format((float) $payment->amount, 2, '.', ' ') }} ₽</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
     </div>
 </x-app-layout>

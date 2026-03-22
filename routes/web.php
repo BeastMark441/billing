@@ -17,6 +17,7 @@ use App\Http\Controllers\SeoController;
 use App\Http\Controllers\TelegramIntegrationController;
 use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\TBankApiController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -96,9 +97,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/orders/{order}/renew', [\App\Http\Controllers\OrderController::class, 'renew'])->name('orders.renew');
 
     // Payments
-    Route::post('/payments/create', [\App\Http\Controllers\PaymentController::class, 'store'])->name('payments.create');
-    Route::get('/payments/success', [\App\Http\Controllers\PaymentController::class, 'success'])->name('payments.success');
-    Route::get('/payments/failed', [\App\Http\Controllers\PaymentController::class, 'failed'])->name('payments.failed');
+    Route::post('/payments/create', [TBankApiController::class, 'store'])->name('payments.create');
+    Route::get('/payments/success', [TBankApiController::class, 'success'])->name('payments.success');
+    Route::get('/payments/failed', [TBankApiController::class, 'failed'])->name('payments.failed');
 
     // Receipts
     Route::get('/receipts', [ReceiptController::class, 'index'])->name('dashboard.receipts.index');
@@ -106,7 +107,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/receipts/{receipt}/download', [ReceiptController::class, 'download'])->name('dashboard.receipts.download');
 });
 
-Route::post('/payments/webhook', [\App\Http\Controllers\PaymentController::class, 'webhook'])->name('payments.webhook');
+Route::post('/payments/webhook', [TBankApiController::class, 'webhook'])->name('payments.webhook');
 Route::post('/telegram/webhook', TelegramWebhookController::class)->name('telegram.webhook');
 
 // Admin Routes

@@ -17,6 +17,7 @@ class BillingController extends Controller
 
         $pendingPaymentsQuery = $user->payments()
             ->whereNull('credited_at')
+            ->where('created_at', '>=', Carbon::now()->subMonth())
             ->orderBy('created_at', 'desc');
 
         // Default to current and previous month if no date filter is applied

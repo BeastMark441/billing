@@ -98,15 +98,37 @@
                 Стоимость: <span class="text-white font-bold">{{ number_format($service->price, 2) }} ₽</span>
                 <br>
                 Ваш баланс: <span class="text-white font-bold">{{ number_format(Auth::user()->balance, 2) }} ₽</span>
+                
+                @if(Auth::user()->balance < $service->price)
+                <div class="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+                    <p class="text-yellow-400 font-semibold mb-2 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        Недостаточно средств
+                    </p>
+                    <p class="text-gray-400 text-xs mb-4">
+                        Ваш баланс меньше стоимости услуги. Пожалуйста, пополните баланс на {{ number_format($service->price - Auth::user()->balance, 2) }} ₽.
+                    </p>
+                    <form action="{{ route('payments.create') }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="amount" value="{{ $service->price - Auth::user()->balance }}">
+                        <button type="submit" class="w-full bg-[#3b82f6] hover:bg-[#2563eb] text-white font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm">
+                            <span>Пополнить через T-Bank</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                        </button>
+                    </form>
+                </div>
+                @endif
             </p>
-            
-            <div class="flex justify-end gap-3">
-                <button type="button" onclick="document.getElementById('confirmOrderModal').classList.add('hidden')" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">
+
+            <div class="flex gap-4">
+                <button type="button" onclick="document.getElementById('confirmOrderModal').classList.add('hidden')" class="flex-1 bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl transition-colors">
                     Отмена
                 </button>
-                <button type="submit" form="order-form" class="bg-[#a6cb40] hover:bg-[#bbe053] text-[#0a0a0f] font-bold py-2 px-6 rounded-lg transition-colors">
-                    Подтвердить списание
+                @if(Auth::user()->balance >= $service->price)
+                <button type="submit" form="order-form" class="flex-1 bg-[#a6cb40] hover:bg-[#bbe053] text-[#0a0a0f] font-bold py-3 rounded-xl transition-colors">
+                    Подтверждаю
                 </button>
+                @endif
             </div>
         </div>
     </div>

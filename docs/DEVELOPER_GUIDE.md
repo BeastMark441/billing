@@ -54,14 +54,17 @@
 *   `findFreeAllocation($nodeId)`: Ищет свободный порт на узле (Node).
 *   `getServerDetails($serverId)`: Получает информацию о сервере.
 
-#### `TBankService`
-Инициализация платежа (`Init`) и запрос статуса (`GetState`).
+#### `TBankApiService`
+Инициализация счета (`invoice/send`) и проверка статуса.
+* `createInvoice(Payment $payment)`: Создает счет и возвращает ссылку на оплату.
+* `verifyWebhook(Request $request)`: Безопасная верификация `x-signature` (RSA).
 
-#### `TBankPaymentProcessor`
-Единая точка применения статусов провайдера к локальной модели `Payment`:
-* обновляет `payments.status/payload/payment_id`
-* при `CONFIRMED` начисляет баланс, пишет `balance_logs`, ставит `credited_at`
-* создаёт чек и отправляет на email
+#### `TBankApiController`
+Единая точка обработки платежей и вебхуков:
+* `store(Request $request)`: Создание локального платежа и редирект на T-Bank.
+* `webhook(Request $request)`: Прием и верификация вебхука, начисление баланса.
+* при `PAID` начисляет баланс, пишет `balance_logs`, ставит `credited_at`
+* создаёт чек и отправляет уведомление через `GeneralNotification`
 
 #### `ReceiptService`
 Формирование чека, PDF, QR и отправка на email.

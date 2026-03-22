@@ -3,23 +3,21 @@
 namespace App\Services;
 
 use App\Models\Payment;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class TBankService
+class TBankApiService
 {
-    protected $terminalKey;
-
-    protected $password;
-
-    protected $baseUrl;
-
+    protected string $terminalKey;
+    protected string $password;
+    protected string $baseUrl;
     protected bool $verifySsl;
 
     public function __construct()
     {
-        $this->terminalKey = config('services.tbank.terminal_key');
-        $this->password = config('services.tbank.password');
+        $this->terminalKey = (string) config('services.tbank.terminal_key');
+        $this->password = (string) config('services.tbank.password');
         $this->baseUrl = (string) config('services.tbank.url');
         $this->verifySsl = (bool) config('services.tbank.verify_ssl', true);
 
@@ -29,12 +27,12 @@ class TBankService
     }
 
     /**
-     * Initialize payment
+     * Create a payment link using Acquiring (Merchant) Init method
      */
-    public function init(Payment $payment)
+    public function createPaymentLink(Payment $payment): string
     {
-        if (! $this->terminalKey || ! $this->password || $this->baseUrl === '') {
-            throw new \Exception('Платёжная система T-Bank не настроена. Проверьте параметры в .env (TerminalKey, Password, URL).');
+        if (!$this->terminalKey || !$this->password) {
+            throw new \Exception('Платёжная система T-Bank не настроена. Проверьте TerminalKey и Password в .env.');
         }
 
         // Amount in kopecks (cents)
@@ -43,19 +41,15 @@ class TBankService
         $params = [
             'TerminalKey' => $this->terminalKey,
             'Amount' => $amountKopecks,
-            'OrderId' => $payment->id.'_'.time(), // Unique order ID
+            'OrderId' => $payment->id . '_' . time(),
             'Description' => 'Пополнение баланса NODEUM',
             'SuccessURL' => route('payments.success'),
             'FailURL' => route('payments.failed'),
             'NotificationURL' => (string) (config('services.tbank.webhook_url') ?: route('payments.webhook')),
         ];
 
-        // Add Receipt only if taxation system is set (optional for simple transfers but required for fiscalization)
-        // For testing/demo we might skip it or include minimal data.
-        // Important: DATA and Receipt should be encoded in JSON if passed, BUT T-Bank API expects them as nested arrays in JSON body request.
-        // However, for Token generation, they are excluded.
-
-        $receipt = [
+        // Add receipt for fiscalization
+        $params['Receipt'] = [
             'Email' => $payment->user->email,
             'Taxation' => 'osn',
             'Items' => [
@@ -69,44 +63,43 @@ class TBankService
             ],
         ];
 
-        $params['Receipt'] = $receipt;
         $params['DATA'] = ['Email' => $payment->user->email];
 
-        // Generate token (without Receipt and DATA)
+        // Generate Token (without Receipt and DATA)
         $params['Token'] = $this->generateToken($params);
 
-        // Send JSON request
         $response = Http::asJson()
             ->withOptions(['verify' => $this->verifySsl])
             ->timeout(12)
             ->retry(2, 250)
-            ->post($this->baseUrl.'Init', $params);
+            ->post($this->baseUrl . 'Init', $params);
 
-        if (! $response->successful() || ! $response->json('Success')) {
+        if (!$response->successful() || !$response->json('Success')) {
             Log::error('TBank Init Error', ['response' => $response->json(), 'payment_id' => $payment->id]);
-            throw new \Exception('Ошибка инициализации платежа: '.($response->json('Message') ?? 'Unknown error').' ('.($response->json('Details') ?? '').')');
+            throw new \Exception('Ошибка инициализации платежа: ' . ($response->json('Message') ?? 'Unknown error'));
         }
 
         $data = $response->json();
+        $paymentUrl = $data['PaymentURL'] ?? null;
 
-        if (! isset($data['PaymentURL']) || ! is_string($data['PaymentURL']) || $data['PaymentURL'] === '') {
-            throw new \Exception('T-Bank вернул пустую ссылку на оплату.');
+        if (!$paymentUrl) {
+            throw new \Exception('T-Bank не вернул ссылку на оплату.');
         }
 
         $payment->update([
             'payment_id' => $data['PaymentId'] ?? null,
-            'payment_url' => $data['PaymentURL'],
+            'payment_url' => $paymentUrl,
             'status' => 'pending',
             'payload' => array_merge($payment->payload ?? [], ['init_response' => $data]),
         ]);
 
-        return $data['PaymentURL'];
+        return $paymentUrl;
     }
 
     /**
-     * Check payment status
+     * Get payment state using GetState
      */
-    public function getState($paymentId)
+    public function getPaymentState(string $paymentId): array
     {
         $params = [
             'TerminalKey' => $this->terminalKey,
@@ -115,38 +108,53 @@ class TBankService
 
         $params['Token'] = $this->generateToken($params);
 
-        $response = Http::withOptions(['verify' => $this->verifySsl])
-            ->timeout(12)
-            ->retry(2, 250)
-            ->post($this->baseUrl.'GetState', $params);
+        $response = Http::asJson()
+            ->withOptions(['verify' => $this->verifySsl])
+            ->post($this->baseUrl . 'GetState', $params);
 
         return $response->json();
     }
 
     /**
-     * Generate signature token
+     * Verify webhook signature (Token)
      */
-    protected function generateToken(array $params)
+    public function verifyWebhook(array $data): bool
+    {
+        $receivedToken = $data['Token'] ?? '';
+        unset($data['Token']);
+
+        $generatedToken = $this->generateToken($data);
+
+        return hash_equals($receivedToken, $generatedToken);
+    }
+
+    /**
+     * Generate T-Bank Token (SHA256)
+     */
+    protected function generateToken(array $params): string
     {
         $tokenParams = $params;
+        
+        // Exclude specific fields from Token generation as per documentation
         unset($tokenParams['Token']);
         unset($tokenParams['Receipt']);
         unset($tokenParams['DATA']);
+        
         $tokenParams['Password'] = $this->password;
 
+        // Sort by key
         ksort($tokenParams);
 
+        // Concatenate values
         $values = '';
         foreach ($tokenParams as $value) {
             if (is_array($value) || is_object($value)) {
-                $values .= json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-
+                // Nested structures are ignored in concatenation but already excluded above
                 continue;
             }
 
             if (is_bool($value)) {
                 $values .= $value ? 'true' : 'false';
-
                 continue;
             }
 
@@ -160,13 +168,28 @@ class TBankService
         return hash('sha256', $values);
     }
 
-    public function validateCallback(array $data)
+    /**
+     * Check idempotency
+     */
+    public function isIdempotent(array $data): bool
     {
-        $token = $data['Token'] ?? '';
-        unset($data['Token']);
+        $paymentId = $data['PaymentId'] ?? null;
+        $status = strtoupper($data['Status'] ?? '');
 
-        $generatedToken = $this->generateToken($data);
+        if (!$paymentId) {
+            return false;
+        }
 
-        return $token === $generatedToken;
+        $payment = Payment::where('payment_id', (string)$paymentId)->first();
+        if (!$payment) {
+            return false;
+        }
+
+        // Already confirmed
+        if ($payment->credited_at) {
+            return true;
+        }
+
+        return false;
     }
 }

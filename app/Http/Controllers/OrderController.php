@@ -77,7 +77,8 @@ class OrderController extends Controller
                 }
 
                 if ((float) $lockedUser->balance < $price) {
-                    throw new Exception('Недостаточно средств на балансе.');
+                    $diff = $price - (float) $lockedUser->balance;
+                    throw new Exception("Недостаточно средств на балансе. Необходимо пополнить еще на {$diff} ₽.");
                 }
 
                 $affected = User::whereKey($lockedUser->id)->decrement('balance', $price);
