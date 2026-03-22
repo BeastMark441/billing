@@ -117,7 +117,7 @@
                             @elseif($order->server_ip)
                                 {{ $order->server_ip }}:{{ $order->server_port }}
                             @else
-                                Ожидает установки
+                                <span class="{{ $order->status_color }}">{{ $order->status_label }}</span>
                             @endif
                         </div>
                     </div>

@@ -107,6 +107,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/infrastructure/services/{service}/cart', [CartController::class, 'add'])->name('cart.add');
     Route::delete('/dashboard/cart/{order}', [CartController::class, 'remove'])->name('cart.remove');
     Route::post('/dashboard/cart/{order}/checkout', [CartController::class, 'checkout'])->name('cart.checkout');
+    Route::post('/dashboard/cart/checkout-all', [CartController::class, 'checkoutAll'])->name('cart.checkout-all');
 
     // Payments
     Route::post('/payments/create', [TBankApiController::class, 'store'])->name('payments.create');

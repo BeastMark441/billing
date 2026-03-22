@@ -29,7 +29,11 @@ class OrderController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        $orders = $user->orders()->with('service')->latest()->paginate(10);
+        $orders = $user->orders()
+            ->whereIn('status', ['paid', 'active', 'pending', 'suspended', 'provisioning', 'failed', 'cancelled', 'expired'])
+            ->with('service')
+            ->latest()
+            ->paginate(10);
 
         return view('dashboard.orders.index', compact('orders'));
     }

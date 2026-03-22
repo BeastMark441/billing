@@ -118,7 +118,13 @@ class DashboardController extends Controller
             ->orderBy('name')
             ->get();
 
-        $orders = $user->orders()->with('service')->latest()->take(5)->get();
+        // Только активные услуги пользователя (без корзины)
+        $orders = $user->orders()
+            ->whereIn('status', ['paid', 'active', 'pending', 'suspended', 'provisioning', 'failed'])
+            ->with('service')
+            ->latest()
+            ->take(5)
+            ->get();
 
         return view('dashboard.infrastructure', compact('categories', 'orders'));
     }

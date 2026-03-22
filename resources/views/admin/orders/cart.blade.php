@@ -53,13 +53,18 @@
                         <td class="px-6 py-4 text-sm">
                             @php
                                 $daysLeft = 7 - ($order->cart_added_at ?? $order->created_at)->diffInDays(now());
+                                $roundedDays = ceil($daysLeft);
                             @endphp
-                            <span class="{{ $daysLeft <= 1 ? 'text-red-400 font-bold' : 'text-yellow-400' }}">
-                                {{ max(0, $daysLeft) }} дн.
+                            <span class="{{ $roundedDays <= 1 ? 'text-red-400 font-bold' : 'text-yellow-400' }}">
+                                {{ max(0, $roundedDays) }} дн.
                             </span>
                         </td>
                         <td class="px-6 py-4 text-right">
-                            <a href="{{ route('admin.orders.show', $order) }}" class="text-blue-400 hover:text-blue-300 text-sm font-medium">Детали</a>
+                            <button type="button" 
+                                    onclick="alert('Взаимодействие с товарами в корзине ограничено. Карточка товара недоступна до момента оплаты.')"
+                                    class="text-gray-500 cursor-not-allowed text-sm font-medium">
+                                Детали
+                            </button>
                         </td>
                     </tr>
                     @empty

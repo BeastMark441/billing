@@ -29,26 +29,8 @@
                             <div class="text-xs text-gray-500">{{ $order->service->category->name }}</div>
                         </td>
                         <td class="px-6 py-4">
-                            @php
-                                $statusClasses = [
-                                    'pending' => 'bg-yellow-500/10 text-yellow-500',
-                                    'paid' => 'bg-blue-500/10 text-blue-500',
-                                    'active' => 'bg-green-500/10 text-green-500',
-                                    'suspended' => 'bg-red-500/10 text-red-500',
-                                    'cancelled' => 'bg-gray-500/10 text-gray-500',
-                                    'failed' => 'bg-red-500/10 text-red-500',
-                                ];
-                                $statusLabels = [
-                                    'pending' => 'Ожидает оплаты',
-                                    'paid' => 'Оплачен',
-                                    'active' => 'Активен',
-                                    'suspended' => 'Приостановлен',
-                                    'cancelled' => 'Отменен',
-                                    'failed' => 'Ошибка',
-                                ];
-                            @endphp
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusClasses[$order->status] ?? 'bg-gray-500/10 text-gray-500' }}">
-                                {{ $statusLabels[$order->status] ?? $order->status }}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $order->status_color }} bg-white/5">
+                                {{ $order->status_label }}
                             </span>
                         </td>
                         <td class="px-6 py-4 text-gray-300 font-mono text-sm">

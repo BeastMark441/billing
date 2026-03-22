@@ -7,28 +7,8 @@
                 </a>
                 <h2 class="text-2xl font-bold text-white">Заказ #{{ $order->id }}</h2>
                 
-                @php
-                    $statusClasses = [
-                        'cart' => 'bg-yellow-500/10 text-yellow-500',
-                        'pending' => 'bg-yellow-500/10 text-yellow-500',
-                        'paid' => 'bg-blue-500/10 text-blue-500',
-                        'active' => 'bg-green-500/10 text-green-500',
-                        'suspended' => 'bg-red-500/10 text-red-500',
-                        'cancelled' => 'bg-gray-500/10 text-gray-500',
-                        'failed' => 'bg-red-500/10 text-red-500',
-                    ];
-                    $statusLabels = [
-                        'cart' => 'В корзине',
-                        'pending' => 'Ожидает оплаты',
-                        'paid' => 'Оплачен',
-                        'active' => 'Активен',
-                        'suspended' => 'Приостановлен',
-                        'cancelled' => 'Отменен',
-                        'failed' => 'Ошибка',
-                    ];
-                @endphp
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium {{ $statusClasses[$order->status] ?? 'bg-gray-500/10 text-gray-500' }}">
-                    {{ $statusLabels[$order->status] ?? $order->status }}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium {{ $order->status_color }} bg-white/5">
+                    {{ $order->status_label }}
                 </span>
             </div>
             <p class="text-gray-400 ml-10">{{ $order->service->name }} ({{ $order->service->category->name }})</p>

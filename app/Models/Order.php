@@ -54,12 +54,14 @@ class Order extends Model
     {
         $statusLabels = [
             'cart' => 'В корзине',
+            'paid' => 'Оплачен',
             'active' => 'Активен',
-            'pending' => 'В обработке',
-            'suspended' => 'Заморожен',
+            'pending' => 'Ожидает оплаты',
+            'suspended' => 'Приостановлен',
             'provisioning' => 'Установка',
             'expired' => 'Истек',
             'cancelled' => 'Отменен',
+            'failed' => 'Ошибка',
         ];
 
         return $statusLabels[$this->status] ?? $this->status;
@@ -69,12 +71,14 @@ class Order extends Model
     {
         $statusColors = [
             'cart' => 'text-yellow-400',
+            'paid' => 'text-blue-400',
             'active' => 'text-green-400',
-            'pending' => 'text-blue-400',
-            'suspended' => 'text-orange-400',
+            'pending' => 'text-yellow-500',
+            'suspended' => 'text-red-500',
             'provisioning' => 'text-purple-400',
             'expired' => 'text-red-400',
             'cancelled' => 'text-gray-400',
+            'failed' => 'text-red-500',
         ];
 
         return $statusColors[$this->status] ?? 'text-gray-300';

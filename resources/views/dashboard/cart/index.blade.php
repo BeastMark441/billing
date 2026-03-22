@@ -93,9 +93,20 @@
                     <span>Сумма:</span>
                     <span>{{ number_format($cartItems->sum('price'), 2) }} ₽</span>
                 </div>
-                <p class="text-xs text-gray-500 mb-6 text-center italic">
-                    Услуги будут активированы после подтверждения оплаты по каждой позиции отдельно.
-                </p>
+                
+                <div class="space-y-3 mb-6">
+                    <form action="{{ route('cart.checkout-all') }}" method="POST">
+                        @csrf
+                        <button type="submit" class="w-full bg-[#a6cb40] hover:bg-[#bbe053] text-[#0a0a0f] font-bold py-4 rounded-xl transition-all shadow-xl shadow-[#a6cb40]/20 flex items-center justify-center gap-2 group">
+                            <span>Оплатить всё сразу</span>
+                            <svg class="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                        </button>
+                    </form>
+                    <p class="text-[10px] text-gray-500 text-center italic">
+                        Средства будут списаны с вашего основного баланса.
+                    </p>
+                </div>
+
                 <a href="{{ route('dashboard.infrastructure') }}" class="block w-full bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-lg transition-colors text-center border border-white/10">
                     Продолжить выбор
                 </a>

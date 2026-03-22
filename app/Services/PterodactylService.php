@@ -47,7 +47,7 @@ class PterodactylService
 
             // 2. Get Service Configuration
             $service = $order->service;
-            $specs = $service->specifications ?? [];
+            $specs = $this->normalizeSpecs($service->specifications ?? []);
 
             // Validate required specs
             $this->validateSpecs($specs);
@@ -249,11 +249,11 @@ class PterodactylService
                 'BUILD_NUMBER' => 'latest',
             ],
             'limits' => [
-                'memory' => (int) ($specs['memory'] ?? 1024),
+                'memory' => $specs['memory'],
                 'swap' => (int) ($specs['swap'] ?? 0),
-                'disk' => (int) ($specs['disk'] ?? 1024),
+                'disk' => $specs['disk'],
                 'io' => (int) ($specs['io'] ?? 500),
-                'cpu' => (int) ($specs['cpu'] ?? 100),
+                'cpu' => $specs['cpu'],
             ],
             'feature_limits' => [
                 'databases' => (int) ($specs['databases'] ?? 0),
@@ -397,9 +397,57 @@ class PterodactylService
         return true;
     }
 
+    protected function normalizeSpecs(array $specs): array
+    {
+        $normalized = $specs;
+
+        // Map human-readable keys to internal keys
+        $mapping = [
+            'RAM' => 'memory',
+            'CPU' => 'cpu',
+            'Disk' => 'disk',
+        ];
+
+        foreach ($mapping as $old => $new) {
+            if (isset($specs[$old]) && !isset($normalized[$new])) {
+                $normalized[$new] = $this->parseValue($specs[$old]);
+            }
+        }
+
+        // Ensure defaults or numeric values
+        if (isset($normalized['memory'])) $normalized['memory'] = $this->parseValue($normalized['memory']);
+        if (isset($normalized['disk'])) $normalized['disk'] = $this->parseValue($normalized['disk']);
+        if (isset($normalized['cpu'])) $normalized['cpu'] = $this->parseValue($normalized['cpu']);
+
+        return $normalized;
+    }
+
+    protected function parseValue($value): int
+    {
+        if (is_numeric($value)) return (int) $value;
+        if (!is_string($value)) return 0;
+
+        $value = strtoupper($value);
+        $numeric = (float) preg_replace('/[^0-9.]/', '', $value);
+
+        if (str_contains($value, 'GB')) {
+            return (int) ($numeric * 1024);
+        }
+        
+        if (str_contains($value, 'MB')) {
+            return (int) $numeric;
+        }
+
+        if (str_contains($value, 'CORE')) {
+            return (int) ($numeric * 100); // 1 Core = 100% CPU in Pterodactyl
+        }
+
+        return (int) $numeric;
+    }
+
     protected function validateSpecs($specs)
     {
-        $required = ['egg_id', 'memory', 'disk', 'cpu'];
+        $required = ['memory', 'disk', 'cpu'];
         foreach ($required as $field) {
             if (! isset($specs[$field])) {
                 throw new Exception("Missing required specification: {$field}");

@@ -125,6 +125,10 @@ class OrderController extends Controller
 
     public function show(Order $order)
     {
+        if ($order->status === 'cart') {
+            return redirect()->route('admin.orders.cart.index')->with('error', 'Взаимодействие с товарами в корзине ограничено. Карточка товара недоступна до момента оплаты.');
+        }
+
         return view('admin.orders.show', compact('order'));
     }
 

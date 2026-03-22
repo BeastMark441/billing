@@ -194,7 +194,7 @@
                                         <td class="px-6 py-4 whitespace-nowrap">{{ $payment->created_at->format('d.m.Y H:i') }}</td>
                                         <td class="px-6 py-4 font-medium text-white">Пополнение баланса (T-Bank)</td>
                                         <td class="px-6 py-4">
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $payment->status_color }}">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $payment->status_color }} bg-white/5">
                                                 {{ $payment->status_label }}
                                             </span>
                                         </td>
