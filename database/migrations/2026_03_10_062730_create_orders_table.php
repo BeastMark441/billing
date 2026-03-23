@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('infrastructure_service_id')->constrained()->nullOnDelete();
+            $table->foreignId('infrastructure_service_id')->nullable()->constrained('infrastructure_services')->nullOnDelete();
             $table->string('status')->default('pending'); // pending, paid, active, suspended, cancelled, failed
             $table->decimal('price', 10, 2);
             $table->json('payload')->nullable(); // Stores specific config for this order
