@@ -193,6 +193,8 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
 
     // Admin Logs
     Route::get('/logs', [AdminLogController::class, 'index'])->name('logs.index');
+    Route::delete('/logs/user', [AdminLogController::class, 'destroyUser'])->middleware('superadmin')->name('logs.user.destroy');
+    Route::delete('/logs', [AdminLogController::class, 'destroyAll'])->middleware('superadmin')->name('logs.destroy');
 });
 
 require __DIR__.'/auth.php';

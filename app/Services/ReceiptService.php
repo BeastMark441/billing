@@ -11,6 +11,7 @@ use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class ReceiptService
@@ -157,39 +158,57 @@ class ReceiptService
 
     protected function generatePdf(Receipt $receipt): void
     {
-        $verifyUrl = route('receipts.public.verify', ['receipt' => $receipt->id, 'token' => $receipt->public_token]);
+        try {
+            $verifyUrl = route('receipts.public.verify', ['receipt' => $receipt->id, 'token' => $receipt->public_token]);
 
-        $qr = new QrCode(
-            data: $verifyUrl,
-            size: 220,
-            margin: 0,
-        );
-        $writer = new PngWriter;
-        $qrDataUri = $writer->write($qr)->getDataUri();
+            $qr = new QrCode(
+                data: $verifyUrl,
+                size: 220,
+                margin: 0,
+            );
+            $writer = new PngWriter;
+            $qrDataUri = $writer->write($qr)->getDataUri();
 
-        $html = view('receipts.pdf', [
-            'receipt' => $receipt,
-            'verifyUrl' => $verifyUrl,
-            'qrDataUri' => $qrDataUri,
-        ])->render();
+            $html = view('receipts.pdf', [
+                'receipt' => $receipt,
+                'verifyUrl' => $verifyUrl,
+                'qrDataUri' => $qrDataUri,
+            ])->render();
 
-        $options = new Options;
-        $options->setDefaultFont('DejaVu Sans');
-        $options->setIsRemoteEnabled(false);
+            $options = new Options;
+            $options->setDefaultFont('DejaVu Sans');
+            $options->setIsRemoteEnabled(false);
 
-        $dompdf = new Dompdf($options);
-        $dompdf->loadHtml($html, 'UTF-8');
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
-        $pdf = $dompdf->output();
+            $dompdf = new Dompdf($options);
+            $dompdf->loadHtml($html, 'UTF-8');
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+            $pdf = $dompdf->output();
 
-        $path = 'receipts/'.$receipt->id.'.pdf';
-        Storage::disk('local')->put($path, $pdf);
+            if (!$pdf) {
+                throw new \Exception('PDF content is empty');
+            }
 
-        $receipt->update([
-            'pdf_path' => $path,
-            'pdf_sha256' => hash('sha256', $pdf),
-        ]);
+            $path = 'receipts/'.$receipt->id.'.pdf';
+            
+            // Ensure directory exists on local disk
+            if (!Storage::disk('local')->exists('receipts')) {
+                Storage::disk('local')->makeDirectory('receipts');
+            }
+            
+            Storage::disk('local')->put($path, $pdf);
+
+            $receipt->update([
+                'pdf_path' => $path,
+                'pdf_sha256' => hash('sha256', $pdf),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Receipt PDF Generation Failed', [
+                'receipt_id' => $receipt->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
     }
 
     protected function sendEmail(Receipt $receipt): void

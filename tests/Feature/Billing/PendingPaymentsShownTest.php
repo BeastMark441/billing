@@ -26,6 +26,6 @@ class PendingPaymentsShownTest extends TestCase
         $this->actingAs($user)
             ->get(route('dashboard.billing'))
             ->assertOk()
-            ->assertSee('Есть платежи в обработке');
+            ->assertSee('Платежи в обработке');
     }
 }

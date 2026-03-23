@@ -121,17 +121,29 @@ class TBankApiService
     public function verifyWebhook(array $data): bool
     {
         $receivedToken = $data['Token'] ?? '';
-        unset($data['Token']);
+        
+        // Remove Token for verification calculation
+        $verifyData = $data;
+        unset($verifyData['Token']);
 
-        $generatedToken = $this->generateToken($data);
+        $generatedToken = $this->generateToken($verifyData, true);
 
-        return hash_equals($receivedToken, $generatedToken);
+        if (!hash_equals((string)$receivedToken, $generatedToken)) {
+            Log::warning('TBank Webhook Signature Mismatch', [
+                'received' => $receivedToken,
+                'generated' => $generatedToken,
+                'payload' => $data
+            ]);
+            return false;
+        }
+
+        return true;
     }
 
     /**
      * Generate T-Bank Token (SHA256)
      */
-    protected function generateToken(array $params): string
+    protected function generateToken(array $params, bool $isWebhook = false): string
     {
         $tokenParams = $params;
         
@@ -139,6 +151,11 @@ class TBankApiService
         unset($tokenParams['Token']);
         unset($tokenParams['Receipt']);
         unset($tokenParams['DATA']);
+        
+        // For webhooks (Notifications), Success should also be excluded according to some docs
+        if ($isWebhook) {
+            unset($tokenParams['Success']);
+        }
         
         $tokenParams['Password'] = $this->password;
 
@@ -149,7 +166,7 @@ class TBankApiService
         $values = '';
         foreach ($tokenParams as $value) {
             if (is_array($value) || is_object($value)) {
-                // Nested structures are ignored in concatenation but already excluded above
+                // Nested structures are ignored in concatenation
                 continue;
             }
 
