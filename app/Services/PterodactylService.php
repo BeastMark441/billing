@@ -409,23 +409,33 @@ class PterodactylService
         ];
 
         foreach ($mapping as $old => $new) {
-            if (isset($specs[$old]) && !isset($normalized[$new])) {
+            if (isset($specs[$old]) && ! isset($normalized[$new])) {
                 $normalized[$new] = $this->parseValue($specs[$old]);
             }
         }
 
         // Ensure defaults or numeric values
-        if (isset($normalized['memory'])) $normalized['memory'] = $this->parseValue($normalized['memory']);
-        if (isset($normalized['disk'])) $normalized['disk'] = $this->parseValue($normalized['disk']);
-        if (isset($normalized['cpu'])) $normalized['cpu'] = $this->parseValue($normalized['cpu']);
+        if (isset($normalized['memory'])) {
+            $normalized['memory'] = $this->parseValue($normalized['memory']);
+        }
+        if (isset($normalized['disk'])) {
+            $normalized['disk'] = $this->parseValue($normalized['disk']);
+        }
+        if (isset($normalized['cpu'])) {
+            $normalized['cpu'] = $this->parseValue($normalized['cpu']);
+        }
 
         return $normalized;
     }
 
     protected function parseValue($value): int
     {
-        if (is_numeric($value)) return (int) $value;
-        if (!is_string($value)) return 0;
+        if (is_numeric($value)) {
+            return (int) $value;
+        }
+        if (! is_string($value)) {
+            return 0;
+        }
 
         $value = strtoupper($value);
         $numeric = (float) preg_replace('/[^0-9.]/', '', $value);
@@ -433,7 +443,7 @@ class PterodactylService
         if (str_contains($value, 'GB')) {
             return (int) ($numeric * 1024);
         }
-        
+
         if (str_contains($value, 'MB')) {
             return (int) $numeric;
         }

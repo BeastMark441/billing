@@ -3,15 +3,17 @@
 namespace App\Services;
 
 use App\Models\Payment;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class TBankApiService
 {
     protected string $terminalKey;
+
     protected string $password;
+
     protected string $baseUrl;
+
     protected bool $verifySsl;
 
     public function __construct()
@@ -31,7 +33,7 @@ class TBankApiService
      */
     public function createPaymentLink(Payment $payment): string
     {
-        if (!$this->terminalKey || !$this->password) {
+        if (! $this->terminalKey || ! $this->password) {
             throw new \Exception('Платёжная система T-Bank не настроена. Проверьте TerminalKey и Password в .env.');
         }
 
@@ -41,7 +43,7 @@ class TBankApiService
         $params = [
             'TerminalKey' => $this->terminalKey,
             'Amount' => $amountKopecks,
-            'OrderId' => $payment->id . '_' . time(),
+            'OrderId' => $payment->id.'_'.time(),
             'Description' => 'Пополнение баланса NODEUM',
             'SuccessURL' => route('payments.success'),
             'FailURL' => route('payments.failed'),
@@ -72,17 +74,17 @@ class TBankApiService
             ->withOptions(['verify' => $this->verifySsl])
             ->timeout(12)
             ->retry(2, 250)
-            ->post($this->baseUrl . 'Init', $params);
+            ->post($this->baseUrl.'Init', $params);
 
-        if (!$response->successful() || !$response->json('Success')) {
+        if (! $response->successful() || ! $response->json('Success')) {
             Log::error('TBank Init Error', ['response' => $response->json(), 'payment_id' => $payment->id]);
-            throw new \Exception('Ошибка инициализации платежа: ' . ($response->json('Message') ?? 'Unknown error'));
+            throw new \Exception('Ошибка инициализации платежа: '.($response->json('Message') ?? 'Unknown error'));
         }
 
         $data = $response->json();
         $paymentUrl = $data['PaymentURL'] ?? null;
 
-        if (!$paymentUrl) {
+        if (! $paymentUrl) {
             throw new \Exception('T-Bank не вернул ссылку на оплату.');
         }
 
@@ -110,7 +112,7 @@ class TBankApiService
 
         $response = Http::asJson()
             ->withOptions(['verify' => $this->verifySsl])
-            ->post($this->baseUrl . 'GetState', $params);
+            ->post($this->baseUrl.'GetState', $params);
 
         return $response->json();
     }
@@ -121,19 +123,20 @@ class TBankApiService
     public function verifyWebhook(array $data): bool
     {
         $receivedToken = $data['Token'] ?? '';
-        
+
         // Remove Token for verification calculation
         $verifyData = $data;
         unset($verifyData['Token']);
 
         $generatedToken = $this->generateToken($verifyData, true);
 
-        if (!hash_equals((string)$receivedToken, $generatedToken)) {
+        if (! hash_equals((string) $receivedToken, $generatedToken)) {
             Log::warning('TBank Webhook Signature Mismatch', [
                 'received' => $receivedToken,
                 'generated' => $generatedToken,
-                'payload' => $data
+                'payload' => $data,
             ]);
+
             return false;
         }
 
@@ -146,17 +149,17 @@ class TBankApiService
     protected function generateToken(array $params, bool $isWebhook = false): string
     {
         $tokenParams = $params;
-        
+
         // Exclude specific fields from Token generation as per documentation
         unset($tokenParams['Token']);
         unset($tokenParams['Receipt']);
         unset($tokenParams['DATA']);
-        
+
         // For webhooks (Notifications), Success should also be excluded according to some docs
         if ($isWebhook) {
             unset($tokenParams['Success']);
         }
-        
+
         $tokenParams['Password'] = $this->password;
 
         // Sort by key
@@ -172,6 +175,7 @@ class TBankApiService
 
             if (is_bool($value)) {
                 $values .= $value ? 'true' : 'false';
+
                 continue;
             }
 
@@ -193,12 +197,12 @@ class TBankApiService
         $paymentId = $data['PaymentId'] ?? null;
         $status = strtoupper($data['Status'] ?? '');
 
-        if (!$paymentId) {
+        if (! $paymentId) {
             return false;
         }
 
-        $payment = Payment::where('payment_id', (string)$paymentId)->first();
-        if (!$payment) {
+        $payment = Payment::where('payment_id', (string) $paymentId)->first();
+        if (! $payment) {
             return false;
         }
 

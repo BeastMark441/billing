@@ -16,7 +16,9 @@ use Illuminate\Support\Facades\Log;
 class TBankApiController extends Controller
 {
     protected TBankApiService $tbankApiService;
+
     protected AuditLogger $auditLogger;
+
     protected ReceiptService $receiptService;
 
     public function __construct(TBankApiService $tbankApiService, AuditLogger $auditLogger, ReceiptService $receiptService)
@@ -55,12 +57,12 @@ class TBankApiController extends Controller
         } catch (\Exception $e) {
             $payment->update([
                 'status' => 'error',
-                'payload' => array_merge($payment->payload ?? [], ['error' => $e->getMessage()])
+                'payload' => array_merge($payment->payload ?? [], ['error' => $e->getMessage()]),
             ]);
 
             $this->auditLogger->log('payment_create_failed', ['error' => $e->getMessage()], 'payment', (string) $payment->id, 'error');
 
-            return back()->with('error', 'Ошибка создания платежа: ' . $e->getMessage());
+            return back()->with('error', 'Ошибка создания платежа: '.$e->getMessage());
         }
     }
 
@@ -70,12 +72,12 @@ class TBankApiController extends Controller
     public function success(Request $request)
     {
         $paymentId = $request->input('PaymentId');
-        if (!$paymentId) {
+        if (! $paymentId) {
             return redirect()->route('dashboard.billing')->with('success', 'Платеж в процессе обработки.');
         }
 
-        $payment = Payment::where('payment_id', (string)$paymentId)->first();
-        
+        $payment = Payment::where('payment_id', (string) $paymentId)->first();
+
         // Even if not credited yet, we show success because bank redirected here
         if ($payment && $payment->credited_at) {
             return redirect()->route('dashboard.billing')->with('success', 'Баланс успешно пополнен.');
@@ -100,15 +102,16 @@ class TBankApiController extends Controller
         $data = $request->all();
 
         // 1. Token verification
-        if (!$this->tbankApiService->verifyWebhook($data)) {
+        if (! $this->tbankApiService->verifyWebhook($data)) {
             Log::warning('TBank Webhook: Invalid Token', ['payload' => $data]);
+
             return response('INVALID_TOKEN', 400);
         }
 
         $paymentId = $data['PaymentId'] ?? null;
         $status = $data['Status'] ?? null;
 
-        if (!$paymentId || !$status) {
+        if (! $paymentId || ! $status) {
             return response('INVALID_PAYLOAD', 400);
         }
 
@@ -117,18 +120,21 @@ class TBankApiController extends Controller
             return response('OK', 200);
         }
 
-        $payment = Payment::where('payment_id', (string)$paymentId)->first();
-        if (!$payment) {
+        $payment = Payment::where('payment_id', (string) $paymentId)->first();
+        if (! $payment) {
             Log::error('TBank Webhook: Payment not found', ['payment_id' => $paymentId]);
+
             return response('NOT_FOUND', 404);
         }
 
         // 3. Process status
         try {
             $this->processStatusUpdate($payment, $status, $data);
+
             return response('OK', 200);
         } catch (\Exception $e) {
             Log::error('TBank Webhook: Processing error', ['error' => $e->getMessage(), 'payment_id' => $payment->id]);
+
             return response('ERROR', 500);
         }
     }
@@ -151,11 +157,13 @@ class TBankApiController extends Controller
         DB::transaction(function () use ($payment, $normalizedStatus, $payload) {
             /** @var Payment $lockedPayment */
             $lockedPayment = Payment::lockForUpdate()->find($payment->id);
-            if (!$lockedPayment) return;
+            if (! $lockedPayment) {
+                return;
+            }
 
             $lockedPayment->update([
                 'status' => strtolower($normalizedStatus),
-                'payload' => array_merge($lockedPayment->payload ?? [], ['sync' => $payload])
+                'payload' => array_merge($lockedPayment->payload ?? [], ['sync' => $payload]),
             ]);
 
             // Acquiring confirmed statuses: CONFIRMED or AUTHORIZED (depending on settings, usually CONFIRMED)
@@ -169,8 +177,8 @@ class TBankApiController extends Controller
 
             /** @var User $user */
             $user = $lockedPayment->user()->lockForUpdate()->first();
-            if (!$user) {
-                throw new \Exception('User not found for payment ' . $lockedPayment->id);
+            if (! $user) {
+                throw new \Exception('User not found for payment '.$lockedPayment->id);
             }
 
             // Credit balance
@@ -178,7 +186,7 @@ class TBankApiController extends Controller
             $user->balanceLogs()->create([
                 'amount' => $lockedPayment->amount,
                 'type' => 'deposit',
-                'description' => 'Пополнение баланса (T-Bank #' . $lockedPayment->id . ')',
+                'description' => 'Пополнение баланса (T-Bank #'.$lockedPayment->id.')',
             ]);
 
             $lockedPayment->update(['credited_at' => now()]);
@@ -186,7 +194,7 @@ class TBankApiController extends Controller
             // Notifications
             $user->notify(new GeneralNotification(
                 'Баланс пополнен',
-                'Ваш баланс успешно пополнен на ' . number_format((float) $lockedPayment->amount, 2, '.', ' ') . ' ₽.',
+                'Ваш баланс успешно пополнен на '.number_format((float) $lockedPayment->amount, 2, '.', ' ').' ₽.',
                 'success',
                 route('dashboard.billing'),
                 'Перейти к финансам'

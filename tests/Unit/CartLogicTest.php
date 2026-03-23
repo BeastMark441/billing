@@ -2,29 +2,30 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\Order;
-use App\Models\InfrastructureService;
 use App\Models\InfrastructureCategory;
+use App\Models\InfrastructureService;
+use App\Models\Order;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class CartLogicTest extends TestCase
 {
     use RefreshDatabase;
 
     protected $user;
+
     protected $service;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->user = User::factory()->create();
-        
+
         $category = InfrastructureCategory::create([
             'name' => 'Test Category',
-            'slug' => 'test-category'
+            'slug' => 'test-category',
         ]);
 
         $this->service = InfrastructureService::create([
@@ -32,7 +33,7 @@ class CartLogicTest extends TestCase
             'name' => 'Test Service',
             'slug' => 'test-service',
             'price' => 100.00,
-            'description' => 'Test description'
+            'description' => 'Test description',
         ]);
     }
 

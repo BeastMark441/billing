@@ -9,9 +9,9 @@ use Dompdf\Dompdf;
 use Dompdf\Options;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class ReceiptService
@@ -185,17 +185,17 @@ class ReceiptService
             $dompdf->render();
             $pdf = $dompdf->output();
 
-            if (!$pdf) {
+            if (! $pdf) {
                 throw new \Exception('PDF content is empty');
             }
 
             $path = 'receipts/'.$receipt->id.'.pdf';
-            
+
             // Ensure directory exists on local disk
-            if (!Storage::disk('local')->exists('receipts')) {
+            if (! Storage::disk('local')->exists('receipts')) {
                 Storage::disk('local')->makeDirectory('receipts');
             }
-            
+
             Storage::disk('local')->put($path, $pdf);
 
             $receipt->update([
@@ -206,7 +206,7 @@ class ReceiptService
             Log::error('Receipt PDF Generation Failed', [
                 'receipt_id' => $receipt->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
         }
     }

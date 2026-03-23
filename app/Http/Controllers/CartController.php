@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ProvisionPterodactylServer;
 use App\Models\InfrastructureService;
 use App\Models\Order;
 use App\Models\User;
@@ -9,7 +10,6 @@ use App\Notifications\GeneralNotification;
 use App\Services\AuditLogger;
 use App\Services\PterodactylService;
 use App\Services\ReceiptService;
-use App\Jobs\ProvisionPterodactylServer;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
@@ -87,6 +87,7 @@ class CartController extends Controller
 
         if ($user->balance < $order->price) {
             $diff = $order->price - $user->balance;
+
             return redirect()->route('orders.create', $order->service)->with('error', "Недостаточно средств. Нужно пополнить на {$diff} ₽.");
         }
 
@@ -108,6 +109,7 @@ class CartController extends Controller
 
         if ((float) $user->balance < $totalPrice) {
             $diff = $totalPrice - (float) $user->balance;
+
             return redirect()->route('cart.index')->with('error', "Недостаточно средств на балансе. Необходимо пополнить еще на {$diff} ₽.");
         }
 
@@ -117,7 +119,7 @@ class CartController extends Controller
         try {
             DB::transaction(function () use ($cartItems, $totalPrice, $user, &$processedCount, &$failedCount) {
                 $lockedUser = User::whereKey($user->id)->lockForUpdate()->first();
-                if (!$lockedUser) {
+                if (! $lockedUser) {
                     throw new Exception('Пользователь не найден.');
                 }
 
@@ -180,6 +182,7 @@ class CartController extends Controller
             return redirect()->route('orders.index')->with('success', "Корзина успешно оплачена. Оплачено услуг: {$processedCount}.");
         } catch (Exception $e) {
             $this->auditLogger->log('cart_checkout_failed', ['error' => $e->getMessage()], 'user', (string) $user->id, 'error');
+
             return redirect()->route('cart.index')->with('error', 'Ошибка при оплате корзины: '.$e->getMessage());
         }
     }

@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\InfrastructureCategory;
-use App\Models\InfrastructureSubcategory;
 use App\Models\InfrastructureService;
+use App\Models\InfrastructureSubcategory;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -29,7 +29,7 @@ class InfrastructureSeeder extends Seeder
                             ['name' => 'Minecraft Elite', 'price' => 1000, 'specs' => ['RAM' => '8GB', 'memory' => 8192, 'CPU' => '6 Core', 'cpu' => 600, 'Disk' => '40GB NVMe', 'disk' => 40960, 'egg_id' => 1]],
                             ['name' => 'Minecraft Ultra', 'price' => 1800, 'specs' => ['RAM' => '16GB', 'memory' => 16384, 'CPU' => '8 Core', 'cpu' => 800, 'Disk' => '80GB NVMe', 'disk' => 81920, 'egg_id' => 1]],
                             ['name' => 'Minecraft Ultimate', 'price' => 3500, 'specs' => ['RAM' => '32GB', 'memory' => 32768, 'CPU' => '12 Core', 'cpu' => 1200, 'Disk' => '160GB NVMe', 'disk' => 163840, 'egg_id' => 1]],
-                        ]
+                        ],
                     ],
                     [
                         'name' => 'Rust',
@@ -40,9 +40,9 @@ class InfrastructureSeeder extends Seeder
                             ['name' => 'Rust Advanced', 'price' => 2400, 'specs' => ['RAM' => '32GB', 'memory' => 32768, 'CPU' => '8 Core', 'cpu' => 800, 'Disk' => '120GB NVMe', 'disk' => 122880, 'egg_id' => 2]],
                             ['name' => 'Rust Extreme', 'price' => 4500, 'specs' => ['RAM' => '64GB', 'memory' => 65536, 'CPU' => '12 Core', 'cpu' => 1200, 'Disk' => '240GB NVMe', 'disk' => 245760, 'egg_id' => 2]],
                             ['name' => 'Rust Godlike', 'price' => 8000, 'specs' => ['RAM' => '128GB', 'memory' => 131072, 'CPU' => '16 Core', 'cpu' => 1600, 'Disk' => '500GB NVMe', 'disk' => 512000, 'egg_id' => 2]],
-                        ]
-                    ]
-                ]
+                        ],
+                    ],
+                ],
             ],
             [
                 'name' => 'Виртуальные серверы',
@@ -57,7 +57,7 @@ class InfrastructureSeeder extends Seeder
                             ['name' => 'Linux M', 'price' => 1200, 'specs' => ['RAM' => '4GB', 'memory' => 4096, 'CPU' => '4 Core', 'cpu' => 400, 'Disk' => '80GB SSD', 'disk' => 81920]],
                             ['name' => 'Linux L', 'price' => 2400, 'specs' => ['RAM' => '8GB', 'memory' => 8192, 'CPU' => '6 Core', 'cpu' => 600, 'Disk' => '160GB SSD', 'disk' => 163840]],
                             ['name' => 'Linux XL', 'price' => 4800, 'specs' => ['RAM' => '16GB', 'memory' => 16384, 'CPU' => '8 Core', 'cpu' => 800, 'Disk' => '320GB SSD', 'disk' => 327680]],
-                        ]
+                        ],
                     ],
                     [
                         'name' => 'Windows VPS',
@@ -68,9 +68,9 @@ class InfrastructureSeeder extends Seeder
                             ['name' => 'Windows Power', 'price' => 3000, 'specs' => ['RAM' => '16GB', 'memory' => 16384, 'CPU' => '6 Core', 'cpu' => 600, 'Disk' => '200GB SSD', 'disk' => 204800]],
                             ['name' => 'Windows Enterprise', 'price' => 5500, 'specs' => ['RAM' => '32GB', 'memory' => 32768, 'CPU' => '8 Core', 'cpu' => 800, 'Disk' => '400GB SSD', 'disk' => 409600]],
                             ['name' => 'Windows Max', 'price' => 10000, 'specs' => ['RAM' => '64GB', 'memory' => 65536, 'CPU' => '12 Core', 'cpu' => 1200, 'Disk' => '800GB SSD', 'disk' => 819200]],
-                        ]
-                    ]
-                ]
+                        ],
+                    ],
+                ],
             ],
             [
                 'name' => 'Выделенные серверы',
@@ -85,7 +85,7 @@ class InfrastructureSeeder extends Seeder
                             ['name' => 'Intel Xeon Silver 4210', 'price' => 15000, 'specs' => ['CPU' => '10c/20t', 'RAM' => '64GB', 'Disk' => '2x1.92TB SSD']],
                             ['name' => 'Intel Xeon Gold 6230', 'price' => 25000, 'specs' => ['CPU' => '20c/40t', 'RAM' => '128GB', 'Disk' => '4x1.92TB SSD']],
                             ['name' => 'Intel Dual Xeon Gold', 'price' => 45000, 'specs' => ['CPU' => '40c/80t', 'RAM' => '256GB', 'Disk' => '8x1.92TB SSD']],
-                        ]
+                        ],
                     ],
                     [
                         'name' => 'AMD-based',
@@ -96,9 +96,9 @@ class InfrastructureSeeder extends Seeder
                             ['name' => 'EPYC 7302P', 'price' => 14000, 'specs' => ['CPU' => '16c/32t', 'RAM' => '128GB', 'Disk' => '2x2TB NVMe']],
                             ['name' => 'EPYC 7542', 'price' => 28000, 'specs' => ['CPU' => '32c/64t', 'RAM' => '256GB', 'Disk' => '4x2TB NVMe']],
                             ['name' => 'Dual EPYC 7742', 'price' => 60000, 'specs' => ['CPU' => '128c/256t', 'RAM' => '512GB', 'Disk' => '8x2TB NVMe']],
-                        ]
-                    ]
-                ]
+                        ],
+                    ],
+                ],
             ],
             [
                 'name' => 'Веб-хостинг',
@@ -113,7 +113,7 @@ class InfrastructureSeeder extends Seeder
                             ['name' => 'Hosting Business', 'price' => 500, 'specs' => ['Sites' => '20', 'Disk' => '50GB', 'DB' => '20']],
                             ['name' => 'Hosting Premium', 'price' => 900, 'specs' => ['Sites' => '50', 'Disk' => '100GB', 'DB' => '50']],
                             ['name' => 'Hosting Unlimited', 'price' => 1500, 'specs' => ['Sites' => '∞', 'Disk' => 'Unlimited', 'DB' => '∞']],
-                        ]
+                        ],
                     ],
                     [
                         'name' => 'Managed WordPress',
@@ -124,9 +124,9 @@ class InfrastructureSeeder extends Seeder
                             ['name' => 'WP Professional', 'price' => 1400, 'specs' => ['Sites' => '10', 'Disk' => '40GB', 'Backup' => 'Hourly']],
                             ['name' => 'WP Agency', 'price' => 2800, 'specs' => ['Sites' => '30', 'Disk' => '100GB', 'Backup' => 'Hourly']],
                             ['name' => 'WP Enterprise', 'price' => 5000, 'specs' => ['Sites' => '100', 'Disk' => '250GB', 'Backup' => 'Real-time']],
-                        ]
-                    ]
-                ]
+                        ],
+                    ],
+                ],
             ],
             [
                 'name' => 'Облачные базы данных',
@@ -141,7 +141,7 @@ class InfrastructureSeeder extends Seeder
                             ['name' => 'PG Small', 'price' => 1600, 'specs' => ['RAM' => '2GB', 'CPU' => '2 Core', 'Disk' => '20GB']],
                             ['name' => 'PG Medium', 'price' => 3200, 'specs' => ['RAM' => '4GB', 'CPU' => '4 Core', 'Disk' => '40GB']],
                             ['name' => 'PG Large', 'price' => 6400, 'specs' => ['RAM' => '8GB', 'CPU' => '8 Core', 'Disk' => '80GB']],
-                        ]
+                        ],
                     ],
                     [
                         'name' => 'MySQL',
@@ -152,10 +152,10 @@ class InfrastructureSeeder extends Seeder
                             ['name' => 'MySQL Plus', 'price' => 1400, 'specs' => ['RAM' => '2GB', 'memory' => 2048, 'CPU' => '2 Core', 'cpu' => 200, 'Disk' => '20GB', 'disk' => 20480]],
                             ['name' => 'MySQL Pro', 'price' => 2800, 'specs' => ['RAM' => '4GB', 'memory' => 4096, 'CPU' => '4 Core', 'cpu' => 400, 'Disk' => '40GB', 'disk' => 40960]],
                             ['name' => 'MySQL Ultra', 'price' => 5600, 'specs' => ['RAM' => '8GB', 'memory' => 8192, 'CPU' => '8 Core', 'cpu' => 800, 'Disk' => '80GB', 'disk' => 81920]],
-                        ]
-                    ]
-                ]
-            ]
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         foreach ($data as $catData) {
@@ -170,7 +170,7 @@ class InfrastructureSeeder extends Seeder
                 $subcategory = InfrastructureSubcategory::create([
                     'infrastructure_category_id' => $category->id,
                     'name' => $subData['name'],
-                    'slug' => Str::slug($category->name . '-' . $subData['name']),
+                    'slug' => Str::slug($category->name.'-'.$subData['name']),
                     'description' => $subData['description'],
                     'is_active' => true,
                 ]);
@@ -181,7 +181,7 @@ class InfrastructureSeeder extends Seeder
                         'infrastructure_subcategory_id' => $subcategory->id,
                         'name' => $svc['name'],
                         'slug' => Str::slug($svc['name']),
-                        'description' => 'Тарифный план ' . $svc['name'] . ' в категории ' . $subData['name'],
+                        'description' => 'Тарифный план '.$svc['name'].' в категории '.$subData['name'],
                         'price' => $svc['price'],
                         'specifications' => $svc['specs'],
                         'is_active' => true,

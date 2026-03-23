@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\InfrastructureCategory;
-use App\Models\InfrastructureSubcategory;
 use App\Models\InfrastructureService;
 use Illuminate\Http\Request;
 
@@ -17,7 +16,7 @@ class PageController extends Controller
         return view('pages.category', [
             'category' => $category,
             'subcategories' => $subcategories,
-            'meta_title' => $category->name . ' - NODEUM',
+            'meta_title' => $category->name.' - NODEUM',
             'meta_description' => $category->description,
         ]);
     }
@@ -26,7 +25,7 @@ class PageController extends Controller
     {
         $category = InfrastructureCategory::where('slug', $slug)->where('is_active', true)->firstOrFail();
         $subcategory = $category->subcategories()->where('slug', $subSlug)->where('is_active', true)->firstOrFail();
-        
+
         $query = $subcategory->services()->where('is_active', true);
 
         // Filters
@@ -36,7 +35,7 @@ class PageController extends Controller
         if ($request->has('max_price')) {
             $query->where('price', '<=', $request->max_price);
         }
-        
+
         $sort = $request->get('sort', 'price_asc');
         switch ($sort) {
             case 'price_desc':
@@ -55,7 +54,7 @@ class PageController extends Controller
             'category' => $category,
             'subcategory' => $subcategory,
             'services' => $services,
-            'meta_title' => $subcategory->name . ' - ' . $category->name . ' - NODEUM',
+            'meta_title' => $subcategory->name.' - '.$category->name.' - NODEUM',
             'meta_description' => $subcategory->description,
         ]);
     }

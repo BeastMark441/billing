@@ -5,8 +5,8 @@ namespace App\Console\Commands;
 use App\Models\Order;
 use App\Notifications\GeneralNotification;
 use App\Services\AuditLogger;
-use Illuminate\Console\Command;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 
 class CleanupAbandonedCart extends Command
 {
@@ -32,17 +32,18 @@ class CleanupAbandonedCart extends Command
         $expiryDate = Carbon::now()->subDays(7);
 
         $abandonedOrders = Order::where('status', 'cart')
-            ->where(function($query) use ($expiryDate) {
+            ->where(function ($query) use ($expiryDate) {
                 $query->where('cart_added_at', '<=', $expiryDate)
-                      ->orWhere(function($q) use ($expiryDate) {
-                          $q->whereNull('cart_added_at')
+                    ->orWhere(function ($q) use ($expiryDate) {
+                        $q->whereNull('cart_added_at')
                             ->where('created_at', '<=', $expiryDate);
-                      });
+                    });
             })
             ->get();
 
         if ($abandonedOrders->isEmpty()) {
             $this->info('No abandoned cart items to cleanup.');
+
             return;
         }
 
@@ -62,7 +63,7 @@ class CleanupAbandonedCart extends Command
                     'Вернуться в каталог'
                 ));
             } catch (\Exception $e) {
-                $this->error("Failed to notify user {$user->email}: " . $e->getMessage());
+                $this->error("Failed to notify user {$user->email}: ".$e->getMessage());
             }
 
             // Log audit
@@ -70,7 +71,7 @@ class CleanupAbandonedCart extends Command
 
             // Soft delete
             $order->delete();
-            
+
             $this->line("Removed Order #{$order->id} from {$user->email} cart.");
         }
 

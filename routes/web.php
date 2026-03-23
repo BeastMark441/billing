@@ -1,12 +1,10 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
-use App\Http\Controllers\Admin\FinanceController as AdminFinanceController;
 use App\Http\Controllers\Admin\InfrastructureCategoryController as AdminInfrastructureCategoryController;
 use App\Http\Controllers\Admin\InfrastructureServiceController as AdminInfrastructureServiceController;
 use App\Http\Controllers\Admin\InfrastructureSubcategoryController as AdminInfrastructureSubcategoryController;
 use App\Http\Controllers\Admin\LogController as AdminLogController;
-use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\TicketController as AdminTicketController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\BillingController;
@@ -78,7 +76,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Billing
     Route::get('/dashboard/billing', [BillingController::class, 'index'])->name('dashboard.billing');
-    
+
     // Help / Tickets
     Route::get('/dashboard/tickets', [TicketController::class, 'index'])->name('dashboard.tickets.index');
     Route::get('/dashboard/tickets/create', [TicketController::class, 'create'])->name('dashboard.tickets.create');
@@ -173,7 +171,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
 
     // Orders Management
     Route::get('orders/cart', [\App\Http\Controllers\Admin\OrderController::class, 'cartIndex'])->name('orders.cart.index');
-    
+
     Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class)->names([
         'index' => 'orders.index',
         'create' => 'orders.create',
