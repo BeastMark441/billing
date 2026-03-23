@@ -34,7 +34,11 @@ class SyncTBankPayments extends Command
         $pendingPayments = Payment::whereNull('credited_at')
             ->whereNotNull('payment_id')
             ->whereIn('status', ['pending', 'authorized', 'new', 'started'])
-            ->orderBy('updated_at', 'asc')
+            ->where(function ($query) {
+                $query->where('sync_attempts', '<', 3)
+                    ->orWhereNull('sync_attempts');
+            })
+            ->orderBy('last_sync_at', 'asc')
             ->limit($limit)
             ->get();
 
@@ -47,26 +51,58 @@ class SyncTBankPayments extends Command
         $this->info("Syncing {$pendingPayments->count()} payments...");
 
         foreach ($pendingPayments as $payment) {
+            // Check exponential backoff (5, 15, 45 seconds)
+            $backoffSeconds = [5, 15, 45];
+            $attempts = (int) $payment->sync_attempts;
+            
+            if ($payment->last_sync_at && $attempts > 0) {
+                $wait = $backoffSeconds[min($attempts - 1, 2)];
+                if ($payment->last_sync_at->addSeconds($wait)->isFuture()) {
+                    $this->line("Skipping #{$payment->id}: too early for attempt #".($attempts + 1));
+                    continue;
+                }
+            }
+
             try {
                 $state = $apiService->getPaymentState($payment->payment_id);
                 $status = $state['Status'] ?? null;
 
                 if ($status) {
                     $this->line("Payment #{$payment->id} (ID: {$payment->payment_id}): Current status is {$status}");
-
-                    // We use a reflection or helper to call protected processStatusUpdate or just wrap the logic
-                    // For simplicity, let's use the public webhook-like processing logic
-                    // But here we need to call the internal processing logic from the controller
-                    // Actually, it's better to move that logic to the service or a dedicated processor class.
-                    // Given the current structure, I'll call a dedicated method I'll add to the controller or use it directly.
-
-                    // Accessing protected method via reflection for now, or I should have made it public.
-                    // Let's assume we can call it if we make it public in TBankApiController.
+                    
                     $apiController->syncStatus($payment, $status, $state);
+
+                    // Update sync info
+                    $payment->update([
+                        'sync_attempts' => 0, // Reset on success
+                        'last_sync_at' => now(),
+                        'error_message' => null,
+                    ]);
+                } else {
+                    throw new \Exception('Empty status in T-Bank response');
                 }
             } catch (\Exception $e) {
+                $newAttempts = $attempts + 1;
                 $this->error("Error syncing payment #{$payment->id}: ".$e->getMessage());
-                Log::error('SyncTBankPayments Error', ['payment_id' => $payment->id, 'error' => $e->getMessage()]);
+                
+                $updateData = [
+                    'sync_attempts' => $newAttempts,
+                    'last_sync_at' => now(),
+                    'error_message' => $e->getMessage(),
+                ];
+
+                if ($newAttempts >= 3) {
+                    $updateData['status'] = 'failed';
+                    $this->warn("Payment #{$payment->id} marked as FAILED after {$newAttempts} attempts.");
+                }
+
+                $payment->update($updateData);
+                
+                Log::error('SyncTBankPayments Error', [
+                    'payment_id' => $payment->id, 
+                    'error' => $e->getMessage(),
+                    'attempt' => $newAttempts
+                ]);
             }
         }
 

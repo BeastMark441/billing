@@ -202,6 +202,7 @@ class ReceiptService
                 'pdf_path' => $path,
                 'pdf_sha256' => hash('sha256', $pdf),
             ]);
+            Log::info('Receipt PDF Generated', ['receipt_id' => $receipt->id, 'path' => $path]);
         } catch (\Exception $e) {
             Log::error('Receipt PDF Generation Failed', [
                 'receipt_id' => $receipt->id,

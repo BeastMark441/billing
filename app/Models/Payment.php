@@ -15,12 +15,17 @@ class Payment extends Model
         'payment_url',
         'payload',
         'description',
+        'sync_attempts',
+        'last_sync_at',
+        'error_message',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'payload' => 'array',
         'credited_at' => 'datetime',
+        'last_sync_at' => 'datetime',
+        'sync_attempts' => 'integer',
     ];
 
     public function getStatusLabelAttribute(): string

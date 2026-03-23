@@ -112,9 +112,21 @@ class TBankApiService
 
         $response = Http::asJson()
             ->withOptions(['verify' => $this->verifySsl])
+            ->timeout(10)
+            ->retry(3, 500)
             ->post($this->baseUrl.'GetState', $params);
 
-        return $response->json();
+        if (! $response->successful()) {
+            throw new \Exception('T-Bank API Connection Error: '.$response->status());
+        }
+
+        $data = $response->json();
+
+        if (isset($data['ErrorCode']) && $data['ErrorCode'] !== '0') {
+            throw new \Exception('T-Bank API Error: '.($data['Message'] ?? $data['Details'] ?? 'Unknown error'));
+        }
+
+        return $data;
     }
 
     /**

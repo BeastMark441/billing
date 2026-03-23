@@ -78,9 +78,23 @@ class TBankApiController extends Controller
 
         $payment = Payment::where('payment_id', (string) $paymentId)->first();
 
-        // Even if not credited yet, we show success because bank redirected here
-        if ($payment && $payment->credited_at) {
-            return redirect()->route('dashboard.billing')->with('success', 'Баланс успешно пополнен.');
+        if ($payment) {
+            // Мгновенно проверяем статус в банке, не дожидаясь вебхука
+            try {
+                $state = $this->tbankApiService->getPaymentState($payment->payment_id);
+                $status = $state['Status'] ?? null;
+
+                if ($status) {
+                    $this->processStatusUpdate($payment, $status, $state);
+                }
+            } catch (\Exception $e) {
+                Log::warning('TBank Instant Sync Failed on SuccessURL', ['error' => $e->getMessage()]);
+            }
+
+            $payment->refresh();
+            if ($payment->credited_at) {
+                return redirect()->route('dashboard.billing')->with('success', 'Баланс успешно пополнен!');
+            }
         }
 
         return redirect()->route('dashboard.billing')->with('success', 'Платеж принят. Баланс будет пополнен автоматически в течение нескольких минут.');
@@ -117,6 +131,8 @@ class TBankApiController extends Controller
 
         // 2. Idempotency check
         if ($this->tbankApiService->isIdempotent($data)) {
+            Log::info('TBank Webhook: Idempotent request', ['payment_id' => $paymentId, 'status' => $status]);
+
             return response('OK', 200);
         }
 
@@ -125,6 +141,13 @@ class TBankApiController extends Controller
             Log::error('TBank Webhook: Payment not found', ['payment_id' => $paymentId]);
 
             return response('NOT_FOUND', 404);
+        }
+
+        // Additional check: if already credited, skip
+        if ($payment->credited_at) {
+            Log::info('TBank Webhook: Payment already credited', ['payment_id' => $payment->id]);
+
+            return response('OK', 200);
         }
 
         // 3. Process status
