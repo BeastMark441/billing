@@ -167,9 +167,14 @@ class TBankApiService
         unset($tokenParams['Receipt']);
         unset($tokenParams['DATA']);
 
-        // For webhooks (Notifications), Success should also be excluded according to some docs
+        // For webhooks (Notifications), more fields should be excluded according to documentation
         if ($isWebhook) {
-            unset($tokenParams['Success']);
+            unset(
+                $tokenParams['Success'],
+                $tokenParams['ErrorCode'],
+                $tokenParams['Message'],
+                $tokenParams['Details']
+            );
         }
 
         $tokenParams['Password'] = $this->password;

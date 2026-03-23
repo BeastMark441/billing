@@ -26,12 +26,20 @@
                         <h3 class="text-xl font-bold text-white mb-2">{{ $item->service->name }}</h3>
                         <p class="text-sm text-gray-400 mb-4">{{ $item->service->description }}</p>
                         
-                        <div class="flex flex-wrap gap-2">
+                        <div class="flex flex-wrap gap-2 mb-4">
                             @foreach($item->service->specifications ?? [] as $key => $value)
                             <span class="text-[10px] bg-white/5 text-gray-400 px-2 py-1 rounded border border-white/5 uppercase">
                                 {{ $key }}: <span class="text-gray-200">{{ is_array($value) ? json_encode($value) : $value }}</span>
                             </span>
                             @endforeach
+                        </div>
+
+                        <div class="text-xs text-gray-500">
+                            @php
+                                $daysLeft = 7 - ($item->cart_added_at ?? $item->created_at)->diffInDays(now());
+                                $roundedDays = ceil($daysLeft);
+                            @endphp
+                            Истекает через <span class="{{ $roundedDays <= 1 ? 'text-red-400 font-bold' : 'text-blue-400 font-bold' }}">{{ max(0, $roundedDays) }} дн.</span>
                         </div>
                     </div>
                     
