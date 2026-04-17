@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\ProvisionPterodactylServer;
+use App\Jobs\ProvisionProxmoxVeServer;
 use App\Models\InfrastructureService;
 use App\Models\Order;
 use App\Models\User;
@@ -30,7 +31,7 @@ class OrderController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
         $orders = $user->orders()
-            ->whereIn('status', ['paid', 'active', 'pending', 'suspended', 'provisioning', 'failed', 'cancelled', 'expired'])
+            ->whereIn('status', ['paid', 'active', 'pending', 'awaiting', 'suspended', 'provisioning', 'failed', 'cancelled', 'expired'])
             ->with('service')
             ->latest()
             ->paginate(10);
@@ -59,7 +60,7 @@ class OrderController extends Controller
         if ($service->one_per_user) {
             $existingOrder = Order::where('user_id', Auth::id())
                 ->where('infrastructure_service_id', $service->id)
-                ->whereIn('status', ['active', 'suspended', 'pending', 'paid'])
+                ->whereIn('status', ['active', 'suspended', 'pending', 'paid', 'awaiting', 'provisioning'])
                 ->exists();
 
             if ($existingOrder) {
@@ -96,12 +97,15 @@ class OrderController extends Controller
                     'description' => 'Покупка услуги: '.$service->name,
                 ]);
 
-                $expiresAt = Carbon::now()->addMonth();
+                $integrationType = $service->integration_type ?: (isset(($service->specifications ?? [])['egg_id']) ? 'pterodactyl' : 'legacy');
+                $startsBillingImmediately = ! in_array($integrationType, ['service', 'other'], true);
+                $expiresAt = $startsBillingImmediately ? Carbon::now()->addMonth() : null;
+                $initialStatus = $startsBillingImmediately ? 'paid' : 'awaiting';
 
                 $order = Order::create([
                     'user_id' => $lockedUser->id,
                     'infrastructure_service_id' => $service->id,
-                    'status' => 'paid',
+                    'status' => $initialStatus,
                     'price' => $service->price,
                     'payload' => $payload,
                     'paid_at' => now(),
@@ -113,9 +117,13 @@ class OrderController extends Controller
                 return $order;
             });
 
+            $orderMessage = $order->status === 'awaiting'
+                ? 'Заказ #'.$order->id.' создан и оплачен. Статус: ожидание исполнителя.'
+                : 'Заказ #'.$order->id.' создан и оплачен. Начинаем подготовку услуги.';
+
             $order->user->notify(new GeneralNotification(
                 'Заказ создан',
-                'Заказ #'.$order->id.' создан и оплачен. Начинаем подготовку услуги.',
+                $orderMessage,
                 'success',
                 route('orders.show', $order),
                 'Открыть заказ'
@@ -150,11 +158,24 @@ class OrderController extends Controller
                 }
             }
 
-            if (isset($service->specifications['egg_id'])) {
+            if ($order->status === 'awaiting') {
+                return redirect()->route('orders.show', $order)->with('success', 'Заказ создан. Ожидайте исполнения, списание/продление начнется после выдачи услуги.');
+            }
+
+            $integrationType = $service->integration_type ?: (isset(($service->specifications ?? [])['egg_id']) ? 'pterodactyl' : 'legacy');
+
+            if ($integrationType === 'pterodactyl' || isset(($service->specifications ?? [])['egg_id'])) {
                 $order->update(['status' => 'provisioning']);
                 ProvisionPterodactylServer::dispatch($order->id);
 
                 return redirect()->route('orders.show', $order)->with('success', 'Заказ создан. Сервер разворачивается, это может занять несколько минут.');
+            }
+
+            if ($integrationType === 'proxmoxve') {
+                $order->update(['status' => 'provisioning']);
+                ProvisionProxmoxVeServer::dispatch($order->id);
+
+                return redirect()->route('orders.show', $order)->with('success', 'Заказ создан. Виртуальный сервер разворачивается, это может занять несколько минут.');
             }
 
             $order->update(['status' => 'active']);

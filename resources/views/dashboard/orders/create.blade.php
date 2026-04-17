@@ -31,10 +31,10 @@
                     </div>
                 </div>
 
-                @if($service->specifications && is_array($service->specifications))
+                @if($service->display_specifications && is_array($service->display_specifications))
                 <h4 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Технические характеристики</h4>
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    @foreach($service->specifications as $key => $value)
+                    @foreach($service->display_specifications as $key => $value)
                     <div class="bg-white/5 rounded-lg p-3 border border-white/5">
                         <div class="text-xs text-gray-500 uppercase tracking-wider mb-1">{{ $key }}</div>
                         <div class="text-white font-bold font-mono">

@@ -82,9 +82,9 @@
                     Технические характеристики
                 </h3>
                 
-                @if($order->service->specifications && is_array($order->service->specifications))
+                @if($order->service->display_specifications && is_array($order->service->display_specifications))
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    @foreach($order->service->specifications as $key => $value)
+                    @foreach($order->service->display_specifications as $key => $value)
                     <div class="bg-white/5 rounded-lg p-3 border border-white/5">
                         <div class="text-xs text-gray-500 uppercase tracking-wider mb-1">{{ $key }}</div>
                         <div class="text-white font-bold font-mono">

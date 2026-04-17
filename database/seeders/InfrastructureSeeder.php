@@ -166,6 +166,13 @@ class InfrastructureSeeder extends Seeder
                 'is_active' => true,
             ]);
 
+            $defaultIntegrationType = null;
+            if ($catData['name'] === 'Игровые серверы') {
+                $defaultIntegrationType = 'pterodactyl';
+            } elseif (in_array($catData['name'], ['Виртуальные серверы', 'Выделенные серверы'], true)) {
+                $defaultIntegrationType = 'proxmoxve';
+            }
+
             foreach ($catData['subcategories'] as $subData) {
                 $subcategory = InfrastructureSubcategory::create([
                     'infrastructure_category_id' => $category->id,
@@ -184,6 +191,7 @@ class InfrastructureSeeder extends Seeder
                         'description' => 'Тарифный план '.$svc['name'].' в категории '.$subData['name'],
                         'price' => $svc['price'],
                         'specifications' => $svc['specs'],
+                        'integration_type' => $defaultIntegrationType,
                         'is_active' => true,
                     ]);
                 }

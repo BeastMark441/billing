@@ -109,6 +109,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Payments
     Route::post('/payments/create', [TBankApiController::class, 'store'])->name('payments.create');
+    Route::get('/payments/tbank/{payment}/return', [TBankApiController::class, 'tbankReturn'])->name('payments.tbank.return');
+    Route::get('/payments/tbank/{payment}/status', [TBankApiController::class, 'status'])->name('payments.tbank.status');
     Route::get('/payments/success', [TBankApiController::class, 'success'])->name('payments.success');
     Route::get('/payments/failed', [TBankApiController::class, 'failed'])->name('payments.failed');
 

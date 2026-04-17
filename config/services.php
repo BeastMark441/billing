@@ -42,6 +42,13 @@ return [
         'verify_ssl' => env('PTERODACTYL_VERIFY_SSL', true),
     ],
 
+    'proxmoxve' => [
+        'url' => env('PROXMOX_URL'),
+        'token_id' => env('PROXMOX_TOKEN_ID'),
+        'token_secret' => env('PROXMOX_TOKEN_SECRET'),
+        'verify_ssl' => env('PROXMOX_VERIFY_SSL', true),
+    ],
+
     'tbank' => [
         'terminal_key' => env('TBANK_TERMINAL_KEY'),
         'password' => env('TBANK_PASSWORD'),

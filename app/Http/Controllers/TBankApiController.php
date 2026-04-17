@@ -79,6 +79,10 @@ class TBankApiController extends Controller
         $payment = Payment::where('payment_id', (string) $paymentId)->first();
 
         if ($payment) {
+            if ($payment->user_id === Auth::id()) {
+                return redirect()->route('payments.tbank.return', ['payment' => $payment->id]);
+            }
+
             // Мгновенно проверяем статус в банке, не дожидаясь вебхука
             try {
                 $state = $this->tbankApiService->getPaymentState($payment->payment_id);
@@ -98,6 +102,78 @@ class TBankApiController extends Controller
         }
 
         return redirect()->route('dashboard.billing')->with('success', 'Платеж принят. Баланс будет пополнен автоматически в течение нескольких минут.');
+    }
+
+    public function tbankReturn(Payment $payment)
+    {
+        if ($payment->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        if ($payment->credited_at) {
+            return redirect()->route('dashboard.billing')->with('success', 'Баланс успешно пополнен!');
+        }
+
+        if ($payment->payment_id) {
+            try {
+                $state = $this->tbankApiService->getPaymentState((string) $payment->payment_id);
+                $status = $state['Status'] ?? null;
+                if ($status) {
+                    $this->processStatusUpdate($payment, (string) $status, $state);
+                }
+            } catch (\Exception $e) {
+                Log::warning('TBank Instant Sync Failed on Return Page', ['error' => $e->getMessage(), 'payment' => $payment->id]);
+            }
+        }
+
+        $payment->refresh();
+        if ($payment->credited_at) {
+            return redirect()->route('dashboard.billing')->with('success', 'Баланс успешно пополнен!');
+        }
+
+        return view('dashboard.billing.tbank-return', [
+            'payment' => $payment,
+        ]);
+    }
+
+    public function status(Payment $payment)
+    {
+        if ($payment->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        if ($payment->credited_at) {
+            return response()->json([
+                'credited' => true,
+                'status' => (string) $payment->status,
+                'status_label' => $payment->status_label,
+            ]);
+        }
+
+        try {
+            if ($payment->payment_id) {
+                $state = $this->tbankApiService->getPaymentState((string) $payment->payment_id);
+                $status = $state['Status'] ?? null;
+                if ($status) {
+                    $this->processStatusUpdate($payment, (string) $status, $state);
+                }
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'credited' => false,
+                'status' => (string) $payment->status,
+                'status_label' => $payment->status_label,
+                'error' => $e->getMessage(),
+            ], 200);
+        }
+
+        $payment->refresh();
+
+        return response()->json([
+            'credited' => (bool) $payment->credited_at,
+            'status' => (string) $payment->status,
+            'status_label' => $payment->status_label,
+        ]);
     }
 
     /**

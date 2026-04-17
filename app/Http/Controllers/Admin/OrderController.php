@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Notifications\GeneralNotification;
 use App\Services\PterodactylService;
+use App\Jobs\ProvisionProxmoxVeServer;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
@@ -106,18 +108,38 @@ class OrderController extends Controller
             'expires_at' => $validated['expires_at'],
         ]);
 
-        // Provision immediately
         try {
-            if (isset($service->specifications['egg_id'])) {
-                $this->pterodactylService->provisionServer($order);
-            }
-            // Mark as paid/active if provisioned or free
+            $integrationType = $service->integration_type ?: (isset(($service->specifications ?? [])['egg_id']) ? 'pterodactyl' : 'legacy');
+            $startsBillingImmediately = ! in_array($integrationType, ['service', 'other'], true);
+
+            $expiresAt = $validated['expires_at'] ?? ($startsBillingImmediately ? Carbon::now()->addMonth() : null);
             $order->update([
-                'status' => 'active',
                 'paid_at' => now(),
+                'expires_at' => $expiresAt,
+                'status' => $startsBillingImmediately ? 'paid' : 'awaiting',
             ]);
 
-            return redirect()->route('admin.orders.show', $order)->with('success', 'Заказ успешно создан и отправлен на установку.');
+            if (! $startsBillingImmediately) {
+                return redirect()->route('admin.orders.show', $order)->with('success', 'Заказ создан. Статус: ожидание исполнителя.');
+            }
+
+            if ($integrationType === 'pterodactyl' || isset(($service->specifications ?? [])['egg_id'])) {
+                $order->update(['status' => 'provisioning']);
+                $this->pterodactylService->provisionServer($order);
+
+                return redirect()->route('admin.orders.show', $order)->with('success', 'Заказ успешно создан и отправлен на установку.');
+            }
+
+            if ($integrationType === 'proxmoxve') {
+                $order->update(['status' => 'provisioning']);
+                ProvisionProxmoxVeServer::dispatch($order->id);
+
+                return redirect()->route('admin.orders.show', $order)->with('success', 'Заказ успешно создан и отправлен на установку.');
+            }
+
+            $order->update(['status' => 'active']);
+
+            return redirect()->route('admin.orders.show', $order)->with('success', 'Заказ успешно создан.');
         } catch (\Exception $e) {
             return redirect()->route('admin.orders.show', $order)->with('error', 'Заказ создан, но ошибка установки: '.$e->getMessage());
         }
@@ -135,13 +157,21 @@ class OrderController extends Controller
     public function update(Request $request, Order $order)
     {
         $validated = $request->validate([
-            'status' => 'required|in:active,suspended,cancelled,pending,paid,failed',
+            'status' => 'required|in:active,suspended,cancelled,pending,paid,failed,awaiting,provisioning,expired',
             'price' => 'required|numeric|min:0',
             'expires_at' => 'nullable|date',
+            'auto_renewal' => 'required|boolean',
         ]);
 
         $oldStatus = $order->status;
         $newStatus = $validated['status'];
+
+        if ($newStatus === 'awaiting') {
+            $validated['expires_at'] = null;
+            $validated['auto_renewal'] = false;
+        } elseif ($oldStatus === 'awaiting' && empty($validated['expires_at'])) {
+            $validated['expires_at'] = now()->addMonth();
+        }
 
         $order->update($validated);
 

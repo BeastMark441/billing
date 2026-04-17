@@ -56,7 +56,7 @@
                             </td>
                             <td class="px-8 py-6">
                                 <div class="flex flex-wrap gap-2">
-                                    @foreach($service->specifications ?? [] as $key => $value)
+                                    @foreach($service->display_specifications ?? [] as $key => $value)
                                         <span class="text-[10px] bg-white/5 text-gray-400 px-2 py-1 rounded uppercase">
                                             {{ $key }}: <span class="text-gray-200">{{ $value }}</span>
                                         </span>

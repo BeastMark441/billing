@@ -27,7 +27,7 @@
                         <p class="text-sm text-gray-400 mb-4">{{ $item->service->description }}</p>
                         
                         <div class="flex flex-wrap gap-2 mb-4">
-                            @foreach($item->service->specifications ?? [] as $key => $value)
+                            @foreach($item->service->display_specifications ?? [] as $key => $value)
                             <span class="text-[10px] bg-white/5 text-gray-400 px-2 py-1 rounded border border-white/5 uppercase">
                                 {{ $key }}: <span class="text-gray-200">{{ is_array($value) ? json_encode($value) : $value }}</span>
                             </span>

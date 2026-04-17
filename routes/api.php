@@ -47,7 +47,7 @@ Route::match(['GET'], '/infrastructure/search', function (Request $request) {
                 'name' => $service->name,
                 'description' => $service->description,
                 'price' => $service->price,
-                'specifications' => $service->specifications,
+                'specifications' => $service->display_specifications,
                 'category_name' => $service->category->name,
                 'subcategory_name' => $service->subcategory ? $service->subcategory->name : null,
             ];

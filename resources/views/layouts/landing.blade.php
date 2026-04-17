@@ -70,7 +70,7 @@
 <body class="bg-[#0a0a0f] text-white font-sans antialiased min-h-screen flex flex-col">
 
     <!-- Header -->
-    <header class="fixed w-full top-0 z-50 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-white/10">
+    <header class="fixed w-full top-0 z-50 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-white/10" x-data="{ mobileOpen: false }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
                 <!-- Left: Logo -->
@@ -164,12 +164,35 @@
 
                     <!-- Mobile menu button -->
                     <div class="md:hidden flex items-center ml-2">
-                        <button class="text-gray-300 hover:text-white focus:outline-none">
+                        <button type="button" class="text-gray-300 hover:text-white focus:outline-none p-2 rounded-lg hover:bg-white/5 transition-colors" @click="mobileOpen = !mobileOpen" :aria-expanded="mobileOpen.toString()" aria-controls="mobile-nav">
                             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                             </svg>
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="mobileOpen" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-2" class="md:hidden border-t border-white/10 bg-[#0a0a0f]/95 backdrop-blur-md" id="mobile-nav" @click.away="mobileOpen = false">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-2">
+                <a href="{{ route('products') }}" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-200 hover:bg-white/5 hover:text-[#a6cb40] transition-colors">Продукты</a>
+                <a href="{{ route('solutions') }}" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-200 hover:bg-white/5 hover:text-[#a6cb40] transition-colors">Решения</a>
+                <a href="{{ route('pricing') }}" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-200 hover:bg-white/5 hover:text-[#a6cb40] transition-colors">Цены</a>
+                <a href="{{ route('about') }}" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-200 hover:bg-white/5 hover:text-[#a6cb40] transition-colors">О компании</a>
+
+                <div class="pt-2 border-t border-white/10">
+                    @auth
+                        <a href="{{ route('dashboard') }}" class="block px-3 py-2 rounded-lg text-sm font-semibold text-white hover:bg-white/5 transition-colors">Панель управления</a>
+                        <a href="{{ route('cart.index') }}" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-200 hover:bg-white/5 transition-colors">Корзина</a>
+                        <form method="POST" action="{{ route('logout') }}" class="mt-1">
+                            @csrf
+                            <button type="submit" class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-red-300 hover:bg-red-500/10 hover:text-red-200 transition-colors">Выйти</button>
+                        </form>
+                    @else
+                        <a href="{{ route('login') }}" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-200 hover:bg-white/5 transition-colors">Войти</a>
+                        <a href="{{ route('register') }}" class="block px-3 py-2 rounded-lg text-sm font-bold bg-[#a6cb40] text-[#0a0a0f] hover:bg-[#8eb330] transition-colors">Регистрация</a>
+                    @endauth
                 </div>
             </div>
         </div>

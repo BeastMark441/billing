@@ -43,11 +43,10 @@ class TBankApiService
         $params = [
             'TerminalKey' => $this->terminalKey,
             'Amount' => $amountKopecks,
-            'OrderId' => $payment->id.'_'.time(),
+            'OrderId' => 'payment_'.$payment->id,
             'Description' => 'Пополнение баланса NODEUM',
-            'SuccessURL' => route('payments.success'),
+            'SuccessURL' => route('payments.tbank.return', ['payment' => $payment->id]),
             'FailURL' => route('payments.failed'),
-            'NotificationURL' => (string) (config('services.tbank.webhook_url') ?: route('payments.webhook')),
         ];
 
         // Add receipt for fiscalization

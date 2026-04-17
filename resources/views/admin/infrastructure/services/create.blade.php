@@ -40,6 +40,27 @@
             </div>
 
             <script>
+                function applyIntegrationTypeFromCategoryName(categoryName) {
+                    const integrationSelect = document.getElementById('integration_type');
+                    if (! integrationSelect) {
+                        return;
+                    }
+                    if (integrationSelect.dataset.auto === 'false') {
+                        return;
+                    }
+
+                    const name = (categoryName || '').toLowerCase();
+                    if (name.includes('игровые серверы')) {
+                        integrationSelect.value = 'pterodactyl';
+                        updateIntegrationFields();
+                        return;
+                    }
+                    if (name.includes('виртуальные серверы') || name.includes('выделенные серверы')) {
+                        integrationSelect.value = 'proxmoxve';
+                        updateIntegrationFields();
+                    }
+                }
+
                 function updateSubcategories() {
                     const categorySelect = document.getElementById('infrastructure_category_id');
                     const subcategoryContainer = document.getElementById('subcategory_container');
@@ -64,10 +85,20 @@
                     } else {
                         subcategoryContainer.style.display = 'none';
                     }
+
+                    applyIntegrationTypeFromCategoryName(selectedOption ? selectedOption.textContent : '');
                 }
                 
                 // Initialize on load
                 document.addEventListener('DOMContentLoaded', function() {
+                    const integrationSelect = document.getElementById('integration_type');
+                    if (integrationSelect) {
+                        integrationSelect.dataset.auto = 'true';
+                        integrationSelect.addEventListener('change', function() {
+                            this.dataset.auto = 'false';
+                        });
+                    }
+
                     updateSubcategories();
 
                     const nameInput = document.getElementById('name');
@@ -127,15 +158,28 @@
                 <x-input-error :messages="$errors->get('description')" class="mt-2 text-red-400" />
             </div>
 
-            <!-- Pterodactyl Configuration -->
-            <div class="mb-6 bg-[#0a0a0f] p-4 rounded-xl border border-white/10">
-                <h3 class="text-lg font-semibold text-white mb-4">Настройки Pterodactyl (для игровых серверов)</h3>
+            <div class="mb-6">
+                <label for="integration_type" class="block text-sm font-medium text-gray-300 mb-2">Категория интеграции</label>
+                <select name="integration_type" id="integration_type" required
+                        class="w-full bg-[#0a0a0f] border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
+                        onchange="updateIntegrationFields()">
+                    <option value="pterodactyl" {{ old('integration_type') === 'pterodactyl' ? 'selected' : '' }}>Pterodactyl Panel</option>
+                    <option value="proxmoxve" {{ old('integration_type') === 'proxmoxve' ? 'selected' : '' }}>ProxmoxVE</option>
+                    <option value="service" {{ old('integration_type') === 'service' ? 'selected' : '' }}>Услуга (вручную)</option>
+                    <option value="other" {{ old('integration_type', 'other') === 'other' ? 'selected' : '' }}>Другое</option>
+                </select>
+                <x-input-error :messages="$errors->get('integration_type')" class="mt-2 text-red-400" />
+                <p class="text-[10px] text-gray-500 mt-1">Для категорий «Услуга» и «Другое» после оплаты заказ перейдет в статус ожидания, и списание/продление начнется после выдачи.</p>
+            </div>
+
+            <div class="mb-6 bg-[#0a0a0f] p-4 rounded-xl border border-white/10" id="pterodactyl_config" style="display: none;">
+                <h3 class="text-lg font-semibold text-white mb-4">Настройки Pterodactyl</h3>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Egg ID -->
                     <div>
                         <label for="pterodactyl_egg_id" class="block text-sm font-medium text-gray-400 mb-1">Egg ID</label>
-                        <input type="number" name="pterodactyl[egg_id]" id="pterodactyl_egg_id" value="{{ old('pterodactyl.egg_id') }}" required
+                        <input type="number" name="pterodactyl[egg_id]" id="pterodactyl_egg_id" value="{{ old('pterodactyl.egg_id') }}"
                                class="w-full bg-[#0f0f13] border border-white/10 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors">
                         <p class="text-[10px] text-gray-500 mt-1">Остальные параметры (Nest, Image, Startup) подтянутся автоматически из Pterodactyl</p>
                     </div>
@@ -198,6 +242,57 @@
                 </div>
             </div>
 
+            <div class="mb-6 bg-[#0a0a0f] p-4 rounded-xl border border-white/10" id="proxmox_config" style="display: none;">
+                <h3 class="text-lg font-semibold text-white mb-4">Настройки ProxmoxVE</h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="proxmox_node" class="block text-sm font-medium text-gray-400 mb-1">Node</label>
+                        <input type="text" name="proxmox[node]" id="proxmox_node" value="{{ old('proxmox.node') }}"
+                               class="w-full bg-[#0f0f13] border border-white/10 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors">
+                    </div>
+
+                    <div>
+                        <label for="proxmox_type" class="block text-sm font-medium text-gray-400 mb-1">Тип</label>
+                        <select name="proxmox[type]" id="proxmox_type"
+                                class="w-full bg-[#0f0f13] border border-white/10 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors">
+                            <option value="lxc" {{ old('proxmox.type', 'lxc') === 'lxc' ? 'selected' : '' }}>LXC (контейнер)</option>
+                            <option value="qemu" {{ old('proxmox.type') === 'qemu' ? 'selected' : '' }}>QEMU (VM)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="proxmox_template_vmid" class="block text-sm font-medium text-gray-400 mb-1">Template VMID</label>
+                        <input type="number" name="proxmox[template_vmid]" id="proxmox_template_vmid" value="{{ old('proxmox.template_vmid') }}"
+                               class="w-full bg-[#0f0f13] border border-white/10 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors">
+                    </div>
+
+                    <div>
+                        <label for="proxmox_storage" class="block text-sm font-medium text-gray-400 mb-1">Storage (опционально)</label>
+                        <input type="text" name="proxmox[storage]" id="proxmox_storage" value="{{ old('proxmox.storage') }}"
+                               class="w-full bg-[#0f0f13] border border-white/10 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors">
+                    </div>
+
+                    <div>
+                        <label for="proxmox_bridge" class="block text-sm font-medium text-gray-400 mb-1">Bridge (опционально)</label>
+                        <input type="text" name="proxmox[bridge]" id="proxmox_bridge" value="{{ old('proxmox.bridge') }}"
+                               class="w-full bg-[#0f0f13] border border-white/10 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors">
+                    </div>
+
+                    <div>
+                        <label for="proxmox_cores" class="block text-sm font-medium text-gray-400 mb-1">CPU (cores)</label>
+                        <input type="number" name="proxmox[cores]" id="proxmox_cores" value="{{ old('proxmox.cores') }}"
+                               class="w-full bg-[#0f0f13] border border-white/10 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors">
+                    </div>
+
+                    <div>
+                        <label for="proxmox_memory_mb" class="block text-sm font-medium text-gray-400 mb-1">RAM (MB)</label>
+                        <input type="number" name="proxmox[memory_mb]" id="proxmox_memory_mb" value="{{ old('proxmox.memory_mb') }}"
+                               class="w-full bg-[#0f0f13] border border-white/10 rounded-lg px-3 py-2 text-white focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors">
+                    </div>
+                </div>
+            </div>
+
             <!-- Sort Order -->
             <div class="mb-4">
                 <label for="sort_order" class="block text-sm font-medium text-gray-300 mb-2">Порядок сортировки</label>
@@ -227,8 +322,19 @@
             </div>
 
             <script>
-                // Auto-slug script
                 document.addEventListener('DOMContentLoaded', function() {
+                    function updateIntegrationFields() {
+                        const integration = document.getElementById('integration_type');
+                        const pterodactylConfig = document.getElementById('pterodactyl_config');
+                        const proxmoxConfig = document.getElementById('proxmox_config');
+                        const value = integration ? integration.value : 'other';
+
+                        if (pterodactylConfig) pterodactylConfig.style.display = value === 'pterodactyl' ? 'block' : 'none';
+                        if (proxmoxConfig) proxmoxConfig.style.display = value === 'proxmoxve' ? 'block' : 'none';
+                    }
+
+                    window.updateIntegrationFields = updateIntegrationFields;
+
                     const nameInput = document.getElementById('name');
                     const slugInput = document.getElementById('slug');
 
@@ -248,6 +354,8 @@
                             slugInput.dataset.auto = 'false';
                         });
                     }
+
+                    updateIntegrationFields();
                 });
             </script>
             

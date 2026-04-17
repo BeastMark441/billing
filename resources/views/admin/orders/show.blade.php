@@ -43,13 +43,16 @@
                             <label for="status" class="block text-sm font-medium text-gray-300 mb-2">Статус</label>
                             <select name="status" id="status" class="w-full bg-[#0a0a0f] border border-white/10 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
                                 <option value="active" {{ $order->status === 'active' ? 'selected' : '' }}>Активен (Active)</option>
+                                <option value="awaiting" {{ $order->status === 'awaiting' ? 'selected' : '' }}>Ожидает исполнителя (Awaiting)</option>
+                                <option value="provisioning" {{ $order->status === 'provisioning' ? 'selected' : '' }}>Установка (Provisioning)</option>
                                 <option value="suspended" {{ $order->status === 'suspended' ? 'selected' : '' }}>Приостановлен (Suspended)</option>
                                 <option value="pending" {{ $order->status === 'pending' ? 'selected' : '' }}>Ожидает оплаты (Pending)</option>
                                 <option value="paid" {{ $order->status === 'paid' ? 'selected' : '' }}>Оплачен (Paid)</option>
+                                <option value="expired" {{ $order->status === 'expired' ? 'selected' : '' }}>Истек (Expired)</option>
                                 <option value="cancelled" {{ $order->status === 'cancelled' ? 'selected' : '' }}>Отменен (Cancelled)</option>
                                 <option value="failed" {{ $order->status === 'failed' ? 'selected' : '' }}>Ошибка (Failed)</option>
                             </select>
-                            <p class="text-[10px] text-gray-500 mt-1">Изменение статуса на 'suspended'/'active' синхронизируется с Pterodactyl</p>
+                            <p class="text-[10px] text-gray-500 mt-1">Изменение статуса на 'suspended'/'active' синхронизируется с Pterodactyl, если заказ привязан к серверу</p>
                         </div>
 
                         <!-- Price -->
@@ -102,6 +105,14 @@
                     <div>
                         <div class="text-gray-500 mb-1">UUID</div>
                         <div class="text-white font-mono break-all">{{ $order->pterodactyl_server_identifier ?? 'N/A' }}</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500 mb-1">Proxmox Node</div>
+                        <div class="text-white font-mono">{{ $order->proxmox_node ?? 'N/A' }}</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500 mb-1">Proxmox VMID</div>
+                        <div class="text-white font-mono">{{ $order->proxmox_vmid ?? 'N/A' }}</div>
                     </div>
                     <div>
                         <div class="text-gray-500 mb-1">IP адрес</div>

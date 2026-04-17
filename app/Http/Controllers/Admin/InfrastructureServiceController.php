@@ -24,7 +24,15 @@ class InfrastructureServiceController extends Controller
             $query->where('infrastructure_category_id', $request->infrastructure_category_id);
         }
 
-        $services = $query->paginate(20);
+        if ($request->filled('integration_type')) {
+            if ($request->integration_type === 'none') {
+                $query->whereNull('integration_type');
+            } else {
+                $query->where('integration_type', $request->integration_type);
+            }
+        }
+
+        $services = $query->paginate(20)->withQueryString();
 
         return view('admin.infrastructure.services.index', compact('services'));
     }
@@ -54,9 +62,10 @@ class InfrastructureServiceController extends Controller
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'one_per_user' => 'boolean',
+            'integration_type' => 'required|in:pterodactyl,proxmoxve,service,other',
 
             // Pterodactyl Fields
-            'pterodactyl.egg_id' => 'nullable|integer',
+            'pterodactyl.egg_id' => 'required_if:integration_type,pterodactyl|nullable|integer',
             'pterodactyl.nest_id' => 'nullable|integer',
             'pterodactyl.memory' => 'nullable|integer',
             'pterodactyl.disk' => 'nullable|integer',
@@ -68,6 +77,15 @@ class InfrastructureServiceController extends Controller
             'pterodactyl.allocations' => 'nullable|integer',
             'pterodactyl.startup' => 'nullable|string',
             'pterodactyl.docker_image' => 'nullable|string',
+
+            // ProxmoxVE Fields
+            'proxmox.node' => 'required_if:integration_type,proxmoxve|nullable|string|max:255',
+            'proxmox.type' => 'required_if:integration_type,proxmoxve|nullable|in:lxc,qemu',
+            'proxmox.template_vmid' => 'required_if:integration_type,proxmoxve|nullable|integer|min:1',
+            'proxmox.storage' => 'nullable|string|max:255',
+            'proxmox.bridge' => 'nullable|string|max:255',
+            'proxmox.cores' => 'nullable|integer|min:1',
+            'proxmox.memory_mb' => 'nullable|integer|min:128',
         ]);
 
         $data = $request->only([
@@ -80,20 +98,19 @@ class InfrastructureServiceController extends Controller
             'sort_order',
             'is_active',
             'one_per_user',
+            'integration_type',
         ]);
 
-        // Process Pterodactyl specs
-        if ($request->has('pterodactyl')) {
-            $pterodactylData = $request->input('pterodactyl');
-            // Filter out null values to keep JSON clean, or keep them if needed.
-            // For now, let's keep keys but remove empty strings if any.
-            $specs = array_filter($pterodactylData, function ($value) {
-                return ! is_null($value) && $value !== '';
-            });
-
-            if (! empty($specs)) {
-                $data['specifications'] = $specs;
-            }
+        if ($validated['integration_type'] === 'pterodactyl') {
+            $pterodactylData = $request->input('pterodactyl', []);
+            $specs = array_filter($pterodactylData, fn ($value) => ! is_null($value) && $value !== '');
+            $data['specifications'] = ! empty($specs) ? $specs : null;
+        } elseif ($validated['integration_type'] === 'proxmoxve') {
+            $proxmoxData = $request->input('proxmox', []);
+            $specs = array_filter($proxmoxData, fn ($value) => ! is_null($value) && $value !== '');
+            $data['specifications'] = ! empty($specs) ? ['proxmox' => $specs] : null;
+        } else {
+            $data['specifications'] = null;
         }
 
         InfrastructureService::create($data);
@@ -108,10 +125,9 @@ class InfrastructureServiceController extends Controller
     public function edit(InfrastructureService $service)
     {
         $categories = InfrastructureCategory::with('subcategories')->orderBy('sort_order')->orderBy('name')->get();
-        // Prepare pterodactyl data for view if exists in specifications
-        $pterodactyl = $service->specifications ?? [];
+        $specifications = $service->specifications ?? [];
 
-        return view('admin.infrastructure.services.edit', compact('service', 'categories', 'pterodactyl'));
+        return view('admin.infrastructure.services.edit', compact('service', 'categories', 'specifications'));
     }
 
     /**
@@ -129,9 +145,10 @@ class InfrastructureServiceController extends Controller
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'one_per_user' => 'boolean',
+            'integration_type' => 'required|in:pterodactyl,proxmoxve,service,other',
 
             // Pterodactyl Fields
-            'pterodactyl.egg_id' => 'nullable|integer',
+            'pterodactyl.egg_id' => 'required_if:integration_type,pterodactyl|nullable|integer',
             'pterodactyl.nest_id' => 'nullable|integer',
             'pterodactyl.memory' => 'nullable|integer',
             'pterodactyl.disk' => 'nullable|integer',
@@ -143,6 +160,15 @@ class InfrastructureServiceController extends Controller
             'pterodactyl.allocations' => 'nullable|integer',
             'pterodactyl.startup' => 'nullable|string',
             'pterodactyl.docker_image' => 'nullable|string',
+
+            // ProxmoxVE Fields
+            'proxmox.node' => 'required_if:integration_type,proxmoxve|nullable|string|max:255',
+            'proxmox.type' => 'required_if:integration_type,proxmoxve|nullable|in:lxc,qemu',
+            'proxmox.template_vmid' => 'required_if:integration_type,proxmoxve|nullable|integer|min:1',
+            'proxmox.storage' => 'nullable|string|max:255',
+            'proxmox.bridge' => 'nullable|string|max:255',
+            'proxmox.cores' => 'nullable|integer|min:1',
+            'proxmox.memory_mb' => 'nullable|integer|min:128',
         ]);
 
         $data = $request->only([
@@ -155,20 +181,19 @@ class InfrastructureServiceController extends Controller
             'sort_order',
             'is_active',
             'one_per_user',
+            'integration_type',
         ]);
 
-        // Process Pterodactyl specs
-        if ($request->has('pterodactyl')) {
-            $pterodactylData = $request->input('pterodactyl');
-            $specs = array_filter($pterodactylData, function ($value) {
-                return ! is_null($value) && $value !== '';
-            });
-
-            if (! empty($specs)) {
-                $data['specifications'] = $specs;
-            } else {
-                $data['specifications'] = null;
-            }
+        if ($validated['integration_type'] === 'pterodactyl') {
+            $pterodactylData = $request->input('pterodactyl', []);
+            $specs = array_filter($pterodactylData, fn ($value) => ! is_null($value) && $value !== '');
+            $data['specifications'] = ! empty($specs) ? $specs : null;
+        } elseif ($validated['integration_type'] === 'proxmoxve') {
+            $proxmoxData = $request->input('proxmox', []);
+            $specs = array_filter($proxmoxData, fn ($value) => ! is_null($value) && $value !== '');
+            $data['specifications'] = ! empty($specs) ? ['proxmox' => $specs] : null;
+        } else {
+            $data['specifications'] = null;
         }
 
         $service->update($data);

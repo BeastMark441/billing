@@ -185,6 +185,7 @@
                                     <th scope="col" class="px-6 py-3">Дата</th>
                                     <th scope="col" class="px-6 py-3">Описание</th>
                                     <th scope="col" class="px-6 py-3">Статус</th>
+                                    <th scope="col" class="px-6 py-3">Действие</th>
                                     <th scope="col" class="px-6 py-3 text-right">Сумма</th>
                                 </tr>
                             </thead>
@@ -197,6 +198,11 @@
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $payment->status_color }} bg-white/5">
                                                 {{ $payment->status_label }}
                                             </span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <a href="{{ route('payments.tbank.return', ['payment' => $payment->id]) }}" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white transition-colors">
+                                                Проверить
+                                            </a>
                                         </td>
                                         <td class="px-6 py-4 text-right font-bold text-yellow-300">+{{ number_format((float) $payment->amount, 2, '.', ' ') }} ₽</td>
                                     </tr>

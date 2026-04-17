@@ -43,6 +43,9 @@ class AuditPresenter
             'pterodactyl_provision_success' => 'Сервер активирован',
             'pterodactyl_provision_failed' => 'Ошибка активации сервера',
 
+            'proxmox_provision_success' => 'Виртуальный сервер активирован',
+            'proxmox_provision_failed' => 'Ошибка активации виртуального сервера',
+
             'pterodactyl_sync_conflict' => 'Конфликт синхронизации Pterodactyl',
             'pterodactyl_sync_remote_suspended' => 'Сервер приостановлен на стороне Pterodactyl',
             'pterodactyl_sync_error' => 'Ошибка синхронизации Pterodactyl',

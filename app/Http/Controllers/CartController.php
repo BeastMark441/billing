@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\ProvisionPterodactylServer;
+use App\Jobs\ProvisionProxmoxVeServer;
 use App\Models\InfrastructureService;
 use App\Models\Order;
 use App\Models\User;
@@ -42,7 +43,7 @@ class CartController extends Controller
         if ($service->one_per_user) {
             $exists = $user->orders()
                 ->where('infrastructure_service_id', $service->id)
-                ->whereIn('status', ['active', 'suspended', 'pending', 'paid', 'cart'])
+                ->whereIn('status', ['active', 'suspended', 'pending', 'paid', 'awaiting', 'provisioning', 'cart'])
                 ->exists();
 
             if ($exists) {
@@ -138,10 +139,13 @@ class CartController extends Controller
 
                 foreach ($cartItems as $order) {
                     $service = $order->service;
-                    $expiresAt = Carbon::now()->addMonth();
+                    $integrationType = $service->integration_type ?: (isset(($service->specifications ?? [])['egg_id']) ? 'pterodactyl' : 'legacy');
+                    $startsBillingImmediately = ! in_array($integrationType, ['service', 'other'], true);
+                    $expiresAt = $startsBillingImmediately ? Carbon::now()->addMonth() : null;
+                    $initialStatus = $startsBillingImmediately ? 'paid' : 'awaiting';
 
                     $order->update([
-                        'status' => 'paid',
+                        'status' => $initialStatus,
                         'paid_at' => now(),
                         'expires_at' => $expiresAt,
                     ]);
@@ -159,10 +163,17 @@ class CartController extends Controller
                         $this->auditLogger->log('receipt_issue_failed', ['error' => $e->getMessage(), 'order_id' => $order->id], 'order', (string) $order->id, 'error');
                     }
 
-                    // Установка сервера если нужно
-                    if (isset($service->specifications['egg_id'])) {
+                    if ($order->status === 'awaiting') {
+                        $processedCount++;
+                        continue;
+                    }
+
+                    if ($integrationType === 'pterodactyl' || isset(($service->specifications ?? [])['egg_id'])) {
                         $order->update(['status' => 'provisioning']);
                         ProvisionPterodactylServer::dispatch($order->id);
+                    } elseif ($integrationType === 'proxmoxve') {
+                        $order->update(['status' => 'provisioning']);
+                        ProvisionProxmoxVeServer::dispatch($order->id);
                     } else {
                         $order->update(['status' => 'active']);
                     }
